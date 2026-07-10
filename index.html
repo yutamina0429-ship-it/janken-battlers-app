@@ -1813,6 +1813,22 @@
   .t-amausa{--c-light:#fff8e8; --c-mid:#e8c878; --c-deep:#5a4520;}
   .t-tsubame{--c-light:#e8f4ff; --c-mid:#8ab8e0; --c-deep:#2a4868;}
   .t-hayabusa{--c-light:#f0e8d0; --c-mid:#b89858; --c-deep:#3a2e18;}
+  .t-shirozuki{--c-light:#d8f0ff; --c-mid:#5ca8d0; --c-deep:#123a50;}
+  .t-hakuretsu{--c-light:#c4eeec; --c-mid:#3fa8a0; --c-deep:#0e3a36;}
+  .t-kagutsuchi{--c-light:#ffb48a; --c-mid:#c2431a; --c-deep:#4a1608;}
+  .t-ikazuchi{--c-light:#c8d4ff; --c-mid:#5a5fc7; --c-deep:#201a4a;}
+  .t-leolite{--c-light:#ffefb8; --c-mid:#e0a82e; --c-deep:#5c4008;}
+  .t-hikarimiko{--c-light:#fff8e0; --c-mid:#efcb6e; --c-deep:#6b5420;}
+  .t-kuragari{--c-light:#b8a0d8; --c-mid:#563a82; --c-deep:#180e28;}
+  .t-yomisasori{--c-light:#c89898; --c-mid:#6e2e38; --c-deep:#240e12;}
+  .t-togebachi{--c-light:#e4ee9c; --c-mid:#8cae2e; --c-deep:#38460e;}
+  .t-dogaiou{--c-light:#e0c298; --c-mid:#8f6530; --c-deep:#3a2810;}
+  .t-nendori{--c-light:#edd8b0; --c-mid:#b08a4e; --c-deep:#4a3618;}
+  .t-mizumusashi{--c-light:#9edce4; --c-mid:#288490; --c-deep:#0a2e34;}
+  .t-sazarenami{--c-light:#c8f0ff; --c-mid:#5ab8d8; --c-deep:#164a5c;}
+  .t-tensho{--c-light:#fffae8; --c-mid:#e0c878; --c-deep:#584418;}
+  .t-amanoha{--c-light:#f0f8ff; --c-mid:#a8c8e8; --c-deep:#3a4e68;}
+  .t-tensaval{--c-light:#e4eefa; --c-mid:#5c7fa8; --c-deep:#1c2c40;}
 
   .fade-flash{
     position:absolute; inset:0; background:#fff;
@@ -2680,11 +2696,18 @@ function playSynthSE(key){
 }
 
 function playBGM(key){
-  if(currentBgmKey === key && !bgmPendingRetry) return;
+  if(currentBgmKey === key && !bgmPendingRetry){
+    pauseAllBgmExcept(key); // defensive: make sure nothing else snuck into a playing state
+    return;
+  }
   stopBGM();
   const el = BGM[key];
   if(!el) return;
   currentBgmKey = key;
+  // defensive pause of every other BGM element, not just whatever stopBGM() tracked as
+  // "current" — this guards against edge cases (background/foreground races, rapid
+  // screen swaps) where two tracks have ended up playing at once in the past.
+  pauseAllBgmExcept(key);
   if(audioMuted) return;
   el.volume = bgmVolume;
   el.currentTime = 0;
@@ -2696,6 +2719,12 @@ function playBGM(key){
        bgmPendingRetry = true;
      });
   }
+}
+
+function pauseAllBgmExcept(key){
+  Object.entries(BGM).forEach(([k, el])=>{
+    if(k !== key && el && !el.paused) el.pause();
+  });
 }
 
 function stopBGM(){
@@ -2714,8 +2743,13 @@ let bgmWasPlayingBeforeHidden = false;
 document.addEventListener('visibilitychange', function(){
   if(document.hidden){
     bgmWasPlayingBeforeHidden = !!(currentBgmKey && BGM[currentBgmKey] && !BGM[currentBgmKey].paused);
-    if(currentBgmKey && BGM[currentBgmKey]) BGM[currentBgmKey].pause();
+    pauseAllBgmExcept(null); // pause everything while hidden, not just the tracked "current" element
   } else {
+    // some mobile browsers/OS media sessions resume playback on their own when the
+    // app returns to the foreground, independently of this handler — pausing every
+    // other element first (not just relying on currentBgmKey) stops that from ever
+    // stacking with the track we're about to (re)start.
+    pauseAllBgmExcept(currentBgmKey);
     if(bgmWasPlayingBeforeHidden && currentBgmKey && BGM[currentBgmKey] && !audioMuted){
       BGM[currentBgmKey].play().catch(()=>{ bgmPendingRetry = true; });
     }
@@ -3913,8 +3947,200 @@ const CARDS = {
              '<b>チョキで勝つ</b>と攻撃力+5（合計15ダメージ）。',
              '<b>チョキで負ける</b>と、相手から受けるダメージ-5。'
            ] },
+  shirozuki: { id:'shirozuki', name:'氷牙狐-シロヅキ', attr:'氷', theme:'t-shirozuki', rarity:'r', num:'R-09',
+           hand:'paper', hp:88, atk:18, winBonus:8, lossMitigation:5, img:'card_shirozuki_portrait.webp', cardImg:'card_shirozuki_full.webp', pixelImg:'card_shirozuki_sprite.webp',
+           flavor:'雪原を統べる狐霊。牙で触れた傷は、なぜか少しずつ塞がっていく。',
+           colors:{light:'#D8F0FF', mid:'#5CA8D0', deep:'#123A50', barLight:'#3F86AC', barDeep:'#0D2C3C',
+                    accent:'#E8F7FF', nameColor:'#F4FBFF', gem:'#6AB8DC', tagFg:'#E4F5FC'},
+           special:{
+             selfHealOnFavoredWin: { hand:'paper', amount:6, moveName:'白月侵掌' } // パーで勝つたびに自分のHP+6
+           },
+           effects:[
+             '<b>パーで勝つ</b>と攻撃力+8（合計26ダメージ）。',
+             '<span class="killshot">パーで勝つたびに</span>、自分のHPを+6回復する。'
+           ] },
+  hakuretsu: { id:'hakuretsu', name:'氷刃蟷螂-ハクレツ', attr:'氷', theme:'t-hakuretsu', rarity:'r', num:'R-10',
+           hand:'scissors', hp:82, atk:19, winBonus:9, lossMitigation:5, img:'card_hakuretsu_portrait.webp', cardImg:'card_hakuretsu_full.webp', pixelImg:'card_hakuretsu_sprite.webp',
+           flavor:'結晶化した鎌で獲物を仕留める。切れ味は氷点下でこそ冴える。',
+           colors:{light:'#C4EEEC', mid:'#3FA8A0', deep:'#0E3A36', barLight:'#2E8880', barDeep:'#0A2E2A',
+                    accent:'#DFF7F4', nameColor:'#EFFCFA', gem:'#4FBAB0', tagFg:'#D8F4F0'},
+           special:{
+             opponentHandExtraDamage: { hand:'paper', amount:6, moveName:'氷刃初太刀' } // 相手がパーを出した場合、追加+6ダメージ
+           },
+           effects:[
+             '<b>チョキで勝つ</b>と攻撃力+9（合計28ダメージ）。',
+             '<span class="killshot">相手がパーを出した場合</span>、追加で+6ダメージ。'
+           ] },
+  kagutsuchi: { id:'kagutsuchi', name:'灼拳僧-カグツチ', attr:'炎', theme:'t-kagutsuchi', rarity:'r', num:'R-11',
+           hand:'rock', hp:90, atk:19, winBonus:9, lossMitigation:5, img:'card_kagutsuchi_portrait.webp', cardImg:'card_kagutsuchi_full.webp', pixelImg:'card_kagutsuchi_sprite.webp',
+           flavor:'拳を握るたび、こぶしが真っ赤に灼ける。本人は熱いと思っていない。',
+           colors:{light:'#FFB48A', mid:'#C2431A', deep:'#4A1608', barLight:'#9E3714', barDeep:'#3A1006',
+                    accent:'#FFDCC4', nameColor:'#FFEEE0', gem:'#D65420', tagFg:'#FFE0CC'},
+           special:{
+             selfHealOnFavoredWin: { hand:'rock', amount:6, moveName:'灼拳再誦' } // グーで勝つたびに自分のHP+6
+           },
+           effects:[
+             '<b>グーで勝つ</b>と攻撃力+9（合計28ダメージ）。',
+             '<span class="killshot">グーで勝つたびに</span>、自分のHPを+6回復する。'
+           ] },
+  ikazuchi: { id:'ikazuchi', name:'雷角獣-イカヅチ', attr:'雷', theme:'t-ikazuchi', rarity:'r', num:'R-12',
+           hand:'rock', hp:92, atk:16, winBonus:7, lossMitigation:6, img:'card_ikazuchi_portrait.webp', cardImg:'card_ikazuchi_full.webp', pixelImg:'card_ikazuchi_sprite.webp',
+           flavor:'角から放電しながら突進する。止まり方はまだ覚えていない。',
+           colors:{light:'#C8D4FF', mid:'#5A5FC7', deep:'#201A4A', barLight:'#4548A0', barDeep:'#181438',
+                    accent:'#E0E4FF', nameColor:'#F0F1FF', gem:'#6C6FD6', tagFg:'#DEE1FA'},
+           special:{
+             opponentHandExtraDamage: { hand:'scissors', amount:6, moveName:'雷角穿撃' } // 相手がチョキを出した場合、追加+6ダメージ
+           },
+           effects:[
+             '<b>グーで勝つ</b>と攻撃力+7（合計23ダメージ）。',
+             '<span class="killshot">相手がチョキを出した場合</span>、追加で+6ダメージ。'
+           ] },
+  leolite: { id:'leolite', name:'光甲獅子-レオライト', attr:'光', theme:'t-leolite', rarity:'r', num:'R-13',
+           hand:'rock', hp:88, atk:17, winBonus:7, lossMitigation:6, img:'card_leolite_portrait.webp', cardImg:'card_leolite_full.webp', pixelImg:'card_leolite_sprite.webp',
+           flavor:'鬣が陽光を弾いて眩しい。爪を合わせる音がやけに響く。',
+           colors:{light:'#FFEFB8', mid:'#E0A82E', deep:'#5C4008', barLight:'#C08E1E', barDeep:'#463006',
+                    accent:'#FFF7DC', nameColor:'#FFFBEE', gem:'#EDBC44', tagFg:'#FFF4D0'},
+           special:{
+             aikoFavoredDamageOpponent: { hand:'rock', amount:8, moveName:'光爪相打' } // グーであいこの場合、相手に8ダメージ
+           },
+           effects:[
+             '<b>グーで勝つ</b>と攻撃力+7（合計24ダメージ）。',
+             '<span class="killshot">グーであいこ</span>の場合、反射で相手に8ダメージ。'
+           ] },
+  hikarimiko: { id:'hikarimiko', name:'光導巫女-ヒカリノミコ', attr:'光', theme:'t-hikarimiko', rarity:'r', num:'R-14',
+           hand:'paper', hp:85, atk:15, winBonus:6, lossMitigation:7, img:'card_hikarimiko_portrait.webp', cardImg:'card_hikarimiko_full.webp', pixelImg:'card_hikarimiko_sprite.webp',
+           flavor:'掲げた掌から柔らかな光が満ちる。加護の言葉は誰にも聞こえない。',
+           colors:{light:'#FFF8E0', mid:'#EFCB6E', deep:'#6B5420', barLight:'#D0A840', barDeep:'#544012',
+                    accent:'#FFFCF0', nameColor:'#FFFEF8', gem:'#F2D488', tagFg:'#FFF8E0'},
+           special:{
+             selfHealOnFavoredWin: { hand:'paper', amount:7, moveName:'光導加護' } // パーで勝つたびに自分のHP+7
+           },
+           effects:[
+             '<b>パーで勝つ</b>と攻撃力+6（合計21ダメージ）。',
+             '<span class="killshot">パーで勝つたびに</span>、自分のHPを+7回復する。'
+           ] },
+  kuragari: { id:'kuragari', name:'影術師-クラガリ', attr:'闇冥', theme:'t-kuragari', rarity:'r', num:'R-15',
+           hand:'paper', hp:83, atk:18, winBonus:9, lossMitigation:5, img:'card_kuragari_portrait.webp', cardImg:'card_kuragari_full.webp', pixelImg:'card_kuragari_sprite.webp',
+           flavor:'影から影へ渡り歩く術師。縄を編むように相手の動きを縛る。',
+           colors:{light:'#B8A0D8', mid:'#563A82', deep:'#180E28', barLight:'#452C68', barDeep:'#120A1E',
+                    accent:'#D4C4E8', nameColor:'#E8DEF4', gem:'#6A4A98', tagFg:'#DED0EC'},
+           special:{
+             opponentHandExtraDamage: { hand:'rock', amount:6, moveName:'影術縛鎖' } // 相手がグーを出した場合、追加+6ダメージ
+           },
+           effects:[
+             '<b>パーで勝つ</b>と攻撃力+9（合計27ダメージ）。',
+             '<span class="killshot">相手がグーを出した場合</span>、追加で+6ダメージ。'
+           ] },
+  yomisasori: { id:'yomisasori', name:'冥爪蠍-ヨミサソリ', attr:'闇冥', theme:'t-yomisasori', rarity:'r', num:'R-16',
+           hand:'scissors', hp:80, atk:20, winBonus:10, lossMitigation:5, img:'card_yomisasori_portrait.webp', cardImg:'card_yomisasori_full.webp', pixelImg:'card_yomisasori_sprite.webp',
+           flavor:'冥府の底で研がれた毒爪を持つ。刺し違える覚悟だけは本物。',
+           colors:{light:'#C89898', mid:'#6E2E38', deep:'#240E12', barLight:'#58242C', barDeep:'#1C0A0E',
+                    accent:'#E0BCBC', nameColor:'#EFD8D8', gem:'#7E3A44', tagFg:'#DCC0C0'},
+           special:{
+             aikoFavoredDamageOpponent: { hand:'scissors', amount:8, moveName:'冥爪連撃' } // チョキであいこの場合、相手に8ダメージ
+           },
+           effects:[
+             '<b>チョキで勝つ</b>と攻撃力+10（合計30ダメージ）。',
+             '<span class="killshot">チョキであいこ</span>の場合、反射で相手に8ダメージ。'
+           ] },
+  togebachi: { id:'togebachi', name:'蔦刃蜂-トゲバチ', attr:'草', theme:'t-togebachi', rarity:'r', num:'R-17',
+           hand:'scissors', hp:78, atk:19, winBonus:9, lossMitigation:5, img:'card_togebachi_portrait.webp', cardImg:'card_togebachi_full.webp', pixelImg:'card_togebachi_sprite.webp',
+           flavor:'蔦状の針を操る蜂。刺されるとしばらく痺れが残るらしい。',
+           colors:{light:'#E4EE9C', mid:'#8CAE2E', deep:'#38460E', barLight:'#71900F', barDeep:'#2C3808',
+                    accent:'#F0F6C4', nameColor:'#F8FBDE', gem:'#9CBE3E', tagFg:'#EEF4B8'},
+           special:{
+             opponentHandExtraDamage: { hand:'paper', amount:6, moveName:'蔦刃乱針' } // 相手がパーを出した場合、追加+6ダメージ
+           },
+           effects:[
+             '<b>チョキで勝つ</b>と攻撃力+9（合計28ダメージ）。',
+             '<span class="killshot">相手がパーを出した場合</span>、追加で+6ダメージ。'
+           ] },
+  dogaiou: { id:'dogaiou', name:'岩拳闘士-ドガイオウ', attr:'土', theme:'t-dogaiou', rarity:'r', num:'R-18',
+           hand:'rock', hp:100, atk:16, winBonus:8, lossMitigation:7, img:'card_dogaiou_portrait.webp', cardImg:'card_dogaiou_full.webp', pixelImg:'card_dogaiou_sprite.webp',
+           flavor:'拳ひとつで山を崩したという伝承がある。真偽は誰も確かめていない。',
+           colors:{light:'#E0C298', mid:'#8F6530', deep:'#3A2810', barLight:'#74501F', barDeep:'#2C1E0C',
+                    accent:'#EFDDBC', nameColor:'#F8EEDC', gem:'#A67840', tagFg:'#EBD8B4'},
+           special:{
+             selfHealOnFavoredWin: { hand:'rock', amount:6, moveName:'岩拳鎮魂' } // グーで勝つたびに自分のHP+6
+           },
+           effects:[
+             '<b>グーで勝つ</b>と攻撃力+8（合計24ダメージ）。',
+             '<span class="killshot">グーで勝つたびに</span>、自分のHPを+6回復する。'
+           ] },
+  nendori: { id:'nendori', name:'土捏ね精-ネンドリ', attr:'土', theme:'t-nendori', rarity:'r', num:'R-19',
+           hand:'paper', hp:96, atk:14, winBonus:6, lossMitigation:8, img:'card_nendori_portrait.webp', cardImg:'card_nendori_full.webp', pixelImg:'card_nendori_sprite.webp',
+           flavor:'土をこねて姿を変える精霊。気分によって顔つきが変わる。',
+           colors:{light:'#EDD8B0', mid:'#B08A4E', deep:'#4A3618', barLight:'#8F6D34', barDeep:'#3A2A12',
+                    accent:'#F5E8CC', nameColor:'#FBF3E4', gem:'#C29A5E', tagFg:'#F0DFBC'},
+           special:{
+             aikoFavoredDamageOpponent: { hand:'paper', amount:7, moveName:'土捏め反し' } // パーであいこの場合、相手に7ダメージ
+           },
+           effects:[
+             '<b>パーで勝つ</b>と攻撃力+6（合計20ダメージ）。',
+             '<span class="killshot">パーであいこ</span>の場合、反射で相手に7ダメージ。'
+           ] },
+  mizumusashi: { id:'mizumusashi', name:'水魂拳士-ミズムサシ', attr:'水', theme:'t-mizumusashi', rarity:'r', num:'R-20',
+           hand:'rock', hp:90, atk:18, winBonus:8, lossMitigation:6, img:'card_mizumusashi_portrait.webp', cardImg:'card_mizumusashi_full.webp', pixelImg:'card_mizumusashi_sprite.webp',
+           flavor:'水面を蹴って間合いを詰める拳士。着地の音すら立てない。',
+           colors:{light:'#9EDCE4', mid:'#288490', deep:'#0A2E34', barLight:'#1E6C78', barDeep:'#082428',
+                    accent:'#C8F0F4', nameColor:'#E4F8FA', gem:'#38A0AC', tagFg:'#C4EEF2'},
+           special:{
+             selfHealOnFavoredWin: { hand:'rock', amount:6, moveName:'水魂再流' } // グーで勝つたびに自分のHP+6
+           },
+           effects:[
+             '<b>グーで勝つ</b>と攻撃力+8（合計26ダメージ）。',
+             '<span class="killshot">グーで勝つたびに</span>、自分のHPを+6回復する。'
+           ] },
+  sazarenami: { id:'sazarenami', name:'水紋精-サザレナミ', attr:'水', theme:'t-sazarenami', rarity:'r', num:'R-21',
+           hand:'paper', hp:84, atk:16, winBonus:7, lossMitigation:6, img:'card_sazarenami_portrait.webp', cardImg:'card_sazarenami_full.webp', pixelImg:'card_sazarenami_sprite.webp',
+           flavor:'掌から波紋を広げ、相手の力を受け流す。争いを好まない性分。',
+           colors:{light:'#C8F0FF', mid:'#5AB8D8', deep:'#164A5C', barLight:'#3F98B8', barDeep:'#123A48',
+                    accent:'#E0F8FF', nameColor:'#F0FCFF', gem:'#6AC4E0', tagFg:'#DCF6FC'},
+           special:{
+             opponentHandExtraDamage: { hand:'rock', amount:6, moveName:'水紋巻絡' } // 相手がグーを出した場合、追加+6ダメージ
+           },
+           effects:[
+             '<b>パーで勝つ</b>と攻撃力+7（合計23ダメージ）。',
+             '<span class="killshot">相手がグーを出した場合</span>、追加で+6ダメージ。'
+           ] },
+  tensho: { id:'tensho', name:'天翔獅子-テンショウ', attr:'天', theme:'t-tensho', rarity:'r', num:'R-22',
+           hand:'rock', hp:90, atk:18, winBonus:8, lossMitigation:6, img:'card_tensho_portrait.webp', cardImg:'card_tensho_full.webp', pixelImg:'card_tensho_sprite.webp',
+           flavor:'雲の上を駆ける獅子。着地のたびに小さな雷が鳴る。',
+           colors:{light:'#FFFAE8', mid:'#E0C878', deep:'#584418', barLight:'#C0A458', barDeep:'#463612',
+                    accent:'#FFFDF4', nameColor:'#FFFEFA', gem:'#EAD088', tagFg:'#FFFAE4'},
+           special:{
+             aikoFavoredDamageOpponent: { hand:'rock', amount:8, moveName:'天翔爪撃' } // グーであいこの場合、相手に8ダメージ
+           },
+           effects:[
+             '<b>グーで勝つ</b>と攻撃力+8（合計26ダメージ）。',
+             '<span class="killshot">グーであいこ</span>の場合、反射で相手に8ダメージ。'
+           ] },
+  amanoha: { id:'amanoha', name:'天羽巫女-アマノハ', attr:'天', theme:'t-amanoha', rarity:'r', num:'R-23',
+           hand:'paper', hp:82, atk:15, winBonus:6, lossMitigation:7, img:'card_amanoha_portrait.webp', cardImg:'card_amanoha_full.webp', pixelImg:'card_amanoha_sprite.webp',
+           flavor:'羽根を一枚落とすたび、傷ついた者の痛みが和らぐという。',
+           colors:{light:'#F0F8FF', mid:'#A8C8E8', deep:'#3A4E68', barLight:'#84A8C8', barDeep:'#2E3E54',
+                    accent:'#F8FCFF', nameColor:'#FCFEFF', gem:'#B8D4EC', tagFg:'#F4F9FF'},
+           special:{
+             selfHealOnFavoredWin: { hand:'paper', amount:7, moveName:'天羽癒風' } // パーで勝つたびに自分のHP+7
+           },
+           effects:[
+             '<b>パーで勝つ</b>と攻撃力+6（合計21ダメージ）。',
+             '<span class="killshot">パーで勝つたびに</span>、自分のHPを+7回復する。'
+           ] },
+  tensaval: { id:'tensaval', name:'天穿鷹-テンサヴァル', attr:'天', theme:'t-tensaval', rarity:'r', num:'R-24',
+           hand:'scissors', hp:80, atk:20, winBonus:10, lossMitigation:5, img:'card_tensaval_portrait.webp', cardImg:'card_tensaval_full.webp', pixelImg:'card_tensaval_sprite.webp',
+           flavor:'鋼色の翼で雲を切り裂く。狙った獲物を外したことは一度もないという。',
+           colors:{light:'#E4EEFA', mid:'#5C7FA8', deep:'#1C2C40', barLight:'#3F5E82', barDeep:'#152030',
+                    accent:'#F0F6FF', nameColor:'#F8FBFF', gem:'#7098C4', tagFg:'#E0EAF6'},
+           special:{
+             opponentHandExtraDamage: { hand:'paper', amount:6, moveName:'天穿一閃' } // 相手がパーを出した場合、追加+6ダメージ
+           },
+           effects:[
+             '<b>チョキで勝つ</b>と攻撃力+10（合計30ダメージ）。',
+             '<span class="killshot">相手がパーを出した場合</span>、追加で+6ダメージ。'
+           ] },
 };
-const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa'];
+const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval'];
 
 const HAND_EMOJI = { rock:'✊', scissors:'✌️', paper:'🖐️' };
 const HAND_JP    = { rock:'グー', scissors:'チョキ', paper:'パー' };
@@ -4916,7 +5142,7 @@ function endArcadeGame(){
 // server the battle is over (so the peer's disconnect isn't flagged as a quit)
 // and leave the room.
 function endOnlineBattle(won){
-  document.getElementById('playAgain').textContent = 'ホームへ';
+  document.getElementById('playAgain').textContent = 'もう一度'; // now triggers a fresh quick match (see the playAgain click handler) instead of duplicating the "ホームへ" button
   const big = document.getElementById('resultBig');
   const sub = document.getElementById('resultSub');
   if(won){
@@ -5762,7 +5988,10 @@ const GACHA_POOL = {
         'tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki',
         'kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa'],
   r:   ['fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal',
-        'glacia','kaguray','raikou','sylvan'], // godschallenge season cards, folded into the same pool
+        'glacia','kaguray','raikou','sylvan', // godschallenge season cards, folded into the same pool
+        'shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari',
+        'yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho',
+        'amanoha','tensaval'],
   sr:  ['shizarisu','ascalon','valkis'],        // godschallenge season cards, folded into the same pool
   lsr: ['sousei_ou','aither'],                  // godschallenge season cards, folded into the same pool
   mgr: ['gcp_rock','gcp_scissors','gcp_paper'], // kept as data only — not in GACHA_RATES, so it never drops.
@@ -6177,8 +6406,13 @@ document.getElementById('playAgain').addEventListener('click', ()=>{
     return;
   }
   if(battleMode==='online'){
-    // the room is already gone (left in endOnlineBattle) — go find a new opponent
-    goHomeReset();
+    // the room is already gone (left in endOnlineBattle) — hop straight back
+    // into quick matchmaking for a rematch, same as tapping "クイックマッチ"
+    // from the online menu. (This used to just go home, duplicating the
+    // separate "ホームへ" button right next to it.)
+    openOnline();
+    olSetTitle('クイックマッチ');
+    if(net) net.quickMatch();
     return;
   }
   buildDeckScreen();
