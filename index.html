@@ -2568,6 +2568,7 @@
   <audio id="bgmCollection" preload="auto" loop src="bgm_collection.mp3"></audio>
   <audio id="bgmStory" preload="auto" loop src="bgm_story.mp3"></audio>
   <audio id="bgmOnline" preload="auto" loop src="bgm_online.mp3"></audio>
+  <audio id="bgmGachaHome" preload="auto" loop src="bgm_gacha_home.mp3"></audio>
 
 </div>
 
@@ -2618,6 +2619,7 @@ const BGM = {
   collection: document.getElementById('bgmCollection'),
   story: document.getElementById('bgmStory'),
   online: document.getElementById('bgmOnline'),
+  gachaHome: document.getElementById('bgmGachaHome'),
   resultWin: document.getElementById('bgmResultWin'),
   resultLose: document.getElementById('bgmResultLose'),
 };
@@ -2707,10 +2709,10 @@ function stopBGM(){
 // map of screen name -> BGM key; screens not listed here have no BGM (silence)
 // NOTE: 'arcadeResult' is deliberately absent here — its BGM depends on win/lose,
 // which is resolved separately in handleScreenAudio() via lastResultWon.
-// NOTE: 'gachaHome' has no track yet (asset pending) so it stays silent for now.
 const SCREEN_BGM_MAP = {
   home: 'home', arcadeBattle: 'battle', splash: 'title', title: 'title',
   collectionHome: 'collection', storyChapters: 'story', online: 'online',
+  gachaHome: 'gachaHome',
 };
 let lastResultWon = true; // set right before each go('arcadeResult') call
 function handleScreenAudio(name){
@@ -2743,7 +2745,14 @@ document.addEventListener('click', function onFirstUserGesture(){
     // currentBgmKey at this exact moment (first tap), so priming it here would
     // race against the "retry" play() call just below and could pause/rewind
     // the track right as it starts audibly playing.
-    [SFX.hit, BGM.home].forEach(el=>{
+    // Every OTHER audio element gets primed here (deduped, since a few keys like
+    // SFX.tap/SFX.uiTap and SFX.rarityMGR/SFX.rarityLSR point at the same <audio>
+    // element) — iOS Safari's autoplay policy unlocks playback per-element, so any
+    // sound not primed on this first tap would otherwise stay silent until the
+    // browser happened to allow it some other way.
+    const allAudioEls = new Set([...Object.values(SFX), ...Object.values(BGM)]);
+    allAudioEls.delete(BGM.title);
+    allAudioEls.forEach(el=>{
       if(!el) return;
       const wasMuted = el.muted;
       el.muted = true;
