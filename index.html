@@ -1289,6 +1289,18 @@
     box-shadow:0 2px 4px rgba(0,0,0,0.4);
   }
   .mini-card.selected .check{opacity:1; transform:scale(1);}
+  .fav-star{
+    position:absolute; z-index:4;
+    width:22px; height:22px; border-radius:50%; border:none;
+    background:rgba(0,0,0,0.45); color:rgba(255,255,255,0.75);
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; line-height:1; padding:0; cursor:pointer;
+    transition:transform .15s ease, background .15s ease, color .15s ease;
+  }
+  .fav-star:active{ transform:scale(0.85); }
+  .fav-star.active{ background:rgba(0,0,0,0.55); color:#ffd54a; }
+  .mini-card .fav-star{ top:6px; left:6px; }
+  .col-tile .fav-star{ top:3px; right:3px; width:16px; height:16px; font-size:10px; }
   .lsr-tag-inline{
     margin-right:auto;
     font-family:"Cinzel", serif; font-weight:800; font-size:7.5px; letter-spacing:.04em;
@@ -1839,6 +1851,9 @@
   .t-tensho{--c-light:#fffae8; --c-mid:#e0c878; --c-deep:#584418;}
   .t-amanoha{--c-light:#f0f8ff; --c-mid:#a8c8e8; --c-deep:#3a4e68;}
   .t-tensaval{--c-light:#e4eefa; --c-mid:#5c7fa8; --c-deep:#1c2c40;}
+  .t-frostwyrm{--c-light:#b8e4f5; --c-mid:#3a7fae; --c-deep:#0a2438;}
+  .t-homurabi{--c-light:#ffb8c4; --c-mid:#d8264a; --c-deep:#3a0a16;}
+  .t-leviaking{--c-light:#9ab8e8; --c-mid:#3050a0; --c-deep:#0c1830;}
 
   .fade-flash{
     position:absolute; inset:0; background:#fff;
@@ -2258,6 +2273,7 @@
       <button class="sort-chip active" data-sort="default">標準</button>
       <button class="sort-chip" data-sort="rarity">レア度</button>
       <button class="sort-chip" data-sort="hand">得意手</button>
+      <button class="sort-chip" data-sort="favorite">★お気に入り</button>
     </div>
     <div class="deck-grid" id="deckGrid"></div>
     <div class="deck-foot">
@@ -2301,6 +2317,7 @@
       <button class="sort-chip active" data-sort="default">標準</button>
       <button class="sort-chip" data-sort="rarity">レア度</button>
       <button class="sort-chip" data-sort="hand">得意手</button>
+      <button class="sort-chip" data-sort="favorite">★お気に入り</button>
     </div>
     <div class="deck-grid" id="deckBuilderGrid"></div>
     <div class="deck-foot">
@@ -2472,6 +2489,13 @@
     <div class="screen-head" style="margin-top:26px;">
       <h2>コレクション</h2>
       <p id="collectionProgress">所持：0 / 0</p>
+    </div>
+    <div class="deck-sort-row">
+      <span class="sort-label">並び替え</span>
+      <button class="sort-chip col-sort-chip active" data-colsort="rarity">レア度</button>
+      <button class="sort-chip col-sort-chip" data-colsort="favorite">★お気に入り</button>
+      <button class="sort-chip col-sort-chip" data-colsort="attr">属性</button>
+      <button class="sort-chip col-sort-chip" data-colsort="name">名前</button>
     </div>
     <div class="collection-grid" id="collectionGrid"></div>
   </section>
@@ -2970,7 +2994,7 @@ let skipAutoSave = false; // set true right before a reset-and-reload so the bef
 function saveState(){
   if(skipAutoSave) return;
   try{
-    const payload = { playerCoins, coinBalanceCorrectedV1, ownedCards, selectedDeck, cardLevels, cardLB, playerRank, playerExp, endlessBest, storyMaxCleared, tutorialDone, seasonPrologueSeen, lastLoginDate, loginStreak, playerName, stamina, lastStaminaTime };
+    const payload = { playerCoins, coinBalanceCorrectedV1, ownedCards, selectedDeck, cardLevels, cardLB, playerRank, playerExp, endlessBest, storyMaxCleared, tutorialDone, seasonPrologueSeen, lastLoginDate, loginStreak, playerName, stamina, lastStaminaTime, favoriteCards };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   }catch(err){
     // localStorage can throw in rare cases (private browsing quota, etc).
@@ -3043,6 +3067,13 @@ function loadState(){
       if(CARDS[id] && saved.ownedCards[id] > 0) cleaned[id] = saved.ownedCards[id];
     });
     ownedCards = cleaned;
+  }
+  if(saved.favoriteCards && typeof saved.favoriteCards === 'object'){
+    const cleanedFav = {};
+    Object.keys(saved.favoriteCards).forEach(id=>{
+      if(CARDS[id] && saved.favoriteCards[id]) cleanedFav[id] = true;
+    });
+    favoriteCards = cleanedFav;
   }
   if(Array.isArray(saved.selectedDeck)){
     const validIds = saved.selectedDeck.filter(id => CARDS[id] && (ownedCards[id]||0) > 0).slice(0,3);
@@ -4152,8 +4183,47 @@ const CARDS = {
              '<b>チョキで勝つ</b>と攻撃力+10（合計30ダメージ）。',
              '<span class="killshot">相手がパーを出した場合</span>、追加で+6ダメージ。'
            ] },
+  frostwyrm: { id:'frostwyrm', name:'極氷帝-フロスヴェルグ', attr:'氷', theme:'t-frostwyrm', rarity:'sr', num:'SR-02',
+           hand:'rock', hp:150, atk:34, winBonus:14, lossMitigation:7, img:'card_frostwyrm_portrait.webp', cardImg:'card_frostwyrm_full.webp', pixelImg:'card_frostwyrm_sprite.webp',
+           flavor:'吐息ひとつで戦場を凍らせる。負けを認めるくらいなら凍え死ぬ方がマシらしい。',
+           colors:{light:'#B8E4F5', mid:'#3A7FAE', deep:'#0A2438', barLight:'#2C6690', barDeep:'#081C2C',
+                    accent:'#D8F2FC', nameColor:'#EFFAFF', gem:'#4A94C4', tagFg:'#DCF3FC'},
+           special:{
+             opponentAtkDebuffOnFavoredWin: { hand:'rock', amount:4, moveName:'凍結の咆哮' }, // グーで勝つたびに相手ATKを永続-4
+             selfDamageOnFavoredLoss: { hand:'rock', amount:6, moveName:'氷牙の代償' }         // グーで負けると自分に追加6ダメージ
+           },
+           effects:[
+             '<span class="killshot">グーで勝つたびに</span>、相手の<b>ATKを-4</b>する（永続蓄積）。',
+             'デメリット：<b>グーで負ける</b>と、自分が追加で6ダメージを受ける。'
+           ] },
+  homurabi: { id:'homurabi', name:'紅蓮巫女-ホムラビ', attr:'炎', theme:'t-homurabi', rarity:'sr', num:'SR-03',
+           hand:'paper', hp:148, atk:33, winBonus:14, lossMitigation:7, img:'card_homurabi_portrait.webp', cardImg:'card_homurabi_full.webp', pixelImg:'card_homurabi_sprite.webp',
+           flavor:'舞うたびに火の粉が舞う。本人は炎を操ってるつもりはないらしい。',
+           colors:{light:'#FFB8C4', mid:'#D8264A', deep:'#3A0A16', barLight:'#B01838', barDeep:'#2C0610',
+                    accent:'#FFDCE2', nameColor:'#FFEEF0', gem:'#E83458', tagFg:'#FFE0E6'},
+           special:{
+             selfHealOnFavoredWin: { hand:'paper', amount:11, moveName:'紅蓮の加護' },      // パーで勝つたびに自分のHP+11
+             aikoFavoredDamageOpponent: { hand:'paper', amount:13, moveName:'業火の裁き' }  // パーであいこの場合、相手に13ダメージ
+           },
+           effects:[
+             '<span class="killshot">パーで勝つたびに</span>、自分のHPを+11回復する。',
+             '<b>パーであいこ</b>の場合、業火の裁きとして相手に13ダメージ。'
+           ] },
+  leviaking: { id:'leviaking', name:'深海王-リヴァイア', attr:'水', theme:'t-leviaking', rarity:'sr', num:'SR-04',
+           hand:'scissors', hp:150, atk:35, winBonus:14, lossMitigation:7, img:'card_leviaking_portrait.webp', cardImg:'card_leviaking_full.webp', pixelImg:'card_leviaking_sprite.webp',
+           flavor:'深海の底から一度も浮上したことがないという。海面に出た瞬間、伝説になる。',
+           colors:{light:'#9AB8E8', mid:'#3050A0', deep:'#0C1830', barLight:'#243C80', barDeep:'#0A1428',
+                    accent:'#D0DCF6', nameColor:'#E8EEFC', gem:'#4060B8', tagFg:'#CCDAF4'},
+           special:{
+             opponentHandExtraDamage: { hand:'paper', amount:10, moveName:'深海貫き' },        // 相手がパーを出した場合、追加+10ダメージ
+             selfDamageOnFavoredLoss: { hand:'scissors', amount:7, moveName:'深淵より這う者' } // チョキで負けると自分に追加7ダメージ
+           },
+           effects:[
+             '<span class="killshot">相手がパーを出した場合</span>、追加で10ダメージ。',
+             'デメリット：<b>チョキで負ける</b>と、自分が追加で7ダメージを受ける。'
+           ] },
 };
-const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval'];
+const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval','frostwyrm','homurabi','leviaking'];
 
 const HAND_EMOJI = { rock:'✊', scissors:'✌️', paper:'🖐️' };
 const HAND_JP    = { rock:'グー', scissors:'チョキ', paper:'パー' };
@@ -4247,7 +4317,9 @@ function deckIds(){
     : { grid:'deckBuilderGrid', count:'deckBuilderCount', action:'saveDeck' };
 }
 
-let deckSortMode = 'default'; // 'default' | 'rarity' | 'hand'
+let deckSortMode = 'default'; // 'default' | 'rarity' | 'hand' | 'favorite'
+let favoriteCards = {}; // { [cardId]: true } — shared between deck screens and the collection
+let collectionSortMode = 'rarity'; // 'rarity' | 'favorite' | 'attr' | 'name'
 
 function buildDeckScreen(){
   const ids = deckIds();
@@ -4261,6 +4333,10 @@ function buildDeckScreen(){
     const handRank = {rock:0, scissors:1, paper:2};
     ownedPool.sort((a,b)=>
       (handRank[CARDS[a].hand] - handRank[CARDS[b].hand]) ||
+      (rarityRank[CARDS[a].rarity] - rarityRank[CARDS[b].rarity]));
+  } else if(deckSortMode === 'favorite'){
+    ownedPool.sort((a,b)=>
+      ((favoriteCards[b]?1:0) - (favoriteCards[a]?1:0)) ||
       (rarityRank[CARDS[a].rarity] - rarityRank[CARDS[b].rarity]));
   }
   ownedPool.forEach(id=>{
@@ -4288,7 +4364,12 @@ function buildDeckScreen(){
           <span class="mc-hand">${HAND_JP[c.hand]}</span>
         </div>
       </div>
+      <button class="fav-star${favoriteCards[id] ? ' active' : ''}" aria-label="お気に入り">${favoriteCards[id] ? '★' : '☆'}</button>
       <div class="check">${isSelected ? selectedDeck.indexOf(id)+1 : ''}</div>`;
+
+    const favBtn = el.querySelector('.fav-star');
+    favBtn.addEventListener('click', (e)=> toggleFavorite(id, e));
+    favBtn.addEventListener('pointerdown', (e)=> e.stopPropagation()); // don't let it also arm the long-press
 
     // long-press (~450ms) opens the full card view; a quick tap toggles selection
     let lpTimer = null;
@@ -4326,14 +4407,38 @@ function toggleDeckCard(id){
   buildDeckScreen();
 }
 
+// shared by the deck screens' mini-cards and the collection tiles — toggles
+// favorite status and re-renders whichever grid is currently on screen.
+function toggleFavorite(id, e){
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  if(!(ownedCards[id]>0)) return;
+  if(favoriteCards[id]) delete favoriteCards[id];
+  else favoriteCards[id] = true;
+  saveState();
+  if(S.collectionHome && S.collectionHome.classList.contains('active')) buildCollectionScreen();
+  else buildDeckScreen();
+}
+
 // sort chips exist on both deck screens; one shared mode keeps them in sync
-document.querySelectorAll('.sort-chip').forEach(chip=>{
+// (collection screen's chips are excluded here — they're wired separately below,
+// since they drive collectionSortMode/buildCollectionScreen instead)
+document.querySelectorAll('.sort-chip:not(.col-sort-chip)').forEach(chip=>{
   chip.addEventListener('click', ()=>{
     deckSortMode = chip.dataset.sort;
-    document.querySelectorAll('.sort-chip').forEach(c=>{
+    document.querySelectorAll('.sort-chip:not(.col-sort-chip)').forEach(c=>{
       c.classList.toggle('active', c.dataset.sort === deckSortMode);
     });
     buildDeckScreen();
+  });
+});
+
+document.querySelectorAll('.col-sort-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    collectionSortMode = chip.dataset.colsort;
+    document.querySelectorAll('.col-sort-chip').forEach(c=>{
+      c.classList.toggle('active', c.dataset.colsort === collectionSortMode);
+    });
+    buildCollectionScreen();
   });
 });
 
@@ -4710,6 +4815,9 @@ const ULT_VIDEO_MAP = {
   valkis:    'ult_valkis.mp4',
   sousei_ou: 'ult_sousei_ou.mp4',
   aither:    'ult_aither.mp4',
+  frostwyrm: 'ult_frostwyrm.mp4',
+  homurabi:  'ult_homurabi.mp4',
+  leviaking: 'ult_leviaking.mp4',
 };
 function playUltimateVideo(fileName, onDone){
   const overlay = document.getElementById('ultVideoOverlay');
@@ -5425,6 +5533,9 @@ const TUT_LINES = {
     '一つ、大事な話がある。強いモンスターには、固有の「スキル」が眠ってることがある。',
     '戦闘中に発動すると、技名と一緒にでかい演出が出る……回復、追加ダメージ、弱体化、効果は様々だ。',
     '図鑑でカードをタップすれば、そのスキルの中身をじっくり確認できるぜ。',
+    'それと、SR以上の激レアなモンスターには「必殺技ゲージ」ってのもある。HPバーの下の光る帯だ。',
+    'ジャンケンに勝つ……特にあいこの時によく溜まる。満タンになったら、画面下のボタンで大技をぶちかませ。',
+    '必殺技は外れなし・確定ヒットの大技だ。ここぞって場面に取っとくと、逆転の目になるぜ。',
     'ガチャを回せば新しい仲間が手に入る。頼りになる相棒を見つけに行こうぜ！'
   ],
   lose: [
@@ -6055,7 +6166,7 @@ const GACHA_POOL = {
         'shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari',
         'yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho',
         'amanoha','tensaval'],
-  sr:  ['shizarisu','ascalon','valkis'],        // godschallenge season cards, folded into the same pool
+  sr:  ['shizarisu','ascalon','valkis','frostwyrm','homurabi','leviaking'], // godschallenge season cards, folded into the same pool
   lsr: ['sousei_ou','aither'],                  // godschallenge season cards, folded into the same pool
   mgr: ['gcp_rock','gcp_scissors','gcp_paper'], // kept as data only — not in GACHA_RATES, so it never drops.
                                                   // (Monetization needs publicly-accurate odds, so a hidden/
@@ -6374,16 +6485,29 @@ document.getElementById('collectionBack').addEventListener('click', ()=> goHomeR
 function buildCollectionScreen(){
   const grid = document.getElementById('collectionGrid');
   grid.innerHTML = '';
+  const rarityRank = {mgr:0, lsr:1, sr:2, r:3, n:4};
+  const attrRank = {'氷':0,'炎':1,'雷':2,'草':3,'闇冥':4,'土':5,'光':6,'水':7,'天':8,'無':9};
   // MGR is not in GACHA_RATES anymore (see the gacha system comment above),
   // so nobody can currently obtain one — meaning it never appears here either,
   // not even as a locked "???" slot. If it's ever reintroduced as an obtainable
   // rarity, this same filter will make its slot appear automatically once owned.
   const order = CARD_POOL.slice()
-    .filter(id => !(CARDS[id].rarity==='mgr' && !((ownedCards[id]||0) > 0)))
-    .sort((a,b)=>{
-      const rank = {mgr:0, lsr:1, sr:2, r:3, n:4};
-      return (rank[CARDS[a].rarity] - rank[CARDS[b].rarity]);
-    });
+    .filter(id => !(CARDS[id].rarity==='mgr' && !((ownedCards[id]||0) > 0)));
+
+  if(collectionSortMode === 'favorite'){
+    order.sort((a,b)=>
+      ((favoriteCards[b]?1:0) - (favoriteCards[a]?1:0)) ||
+      (rarityRank[CARDS[a].rarity] - rarityRank[CARDS[b].rarity]));
+  } else if(collectionSortMode === 'attr'){
+    order.sort((a,b)=>
+      (attrRank[CARDS[a].attr] - attrRank[CARDS[b].attr]) ||
+      (rarityRank[CARDS[a].rarity] - rarityRank[CARDS[b].rarity]));
+  } else if(collectionSortMode === 'name'){
+    order.sort((a,b)=> CARDS[a].name.localeCompare(CARDS[b].name, 'ja'));
+  } else {
+    order.sort((a,b)=> rarityRank[CARDS[a].rarity] - rarityRank[CARDS[b].rarity]);
+  }
+
   let ownedCount = 0;
   order.forEach(id=>{
     const c = CARDS[id];
@@ -6394,10 +6518,13 @@ function buildCollectionScreen(){
     const tile = document.createElement('div');
     tile.className = 'col-tile' + (owned ? '' : ' locked');
     const rarityLabel = c.rarity==='mgr' ? 'MGR' : c.rarity==='lsr' ? 'LSR' : c.rarity==='sr' ? 'SR' : c.rarity==='r' ? 'R' : 'N';
+    const favStar = owned ? `<button class="fav-star${favoriteCards[id] ? ' active' : ''}" aria-label="お気に入り">${favoriteCards[id] ? '★' : '☆'}</button>` : '';
     tile.innerHTML = owned
-      ? `<img src="${c.img}" alt=""><div class="col-rarity">${rarityLabel}</div><div class="col-name">${c.name} Lv.${getCardLevel(id)}${ownedCards[id]>1 ? ' ×'+ownedCards[id] : ''}</div>`
+      ? `<img src="${c.img}" alt="">${favStar}<div class="col-rarity">${rarityLabel}</div><div class="col-name">${c.name} Lv.${getCardLevel(id)}${ownedCards[id]>1 ? ' ×'+ownedCards[id] : ''}</div>`
       : `<img src="${c.img}" alt=""><div class="col-lock">🔒</div><div class="col-name">？？？</div>`;
     if(owned){
+      const favBtn = tile.querySelector('.fav-star');
+      favBtn.addEventListener('click', (e)=> toggleFavorite(id, e));
       tile.addEventListener('click', ()=>{
         openEnhanceModal(id);
       });
