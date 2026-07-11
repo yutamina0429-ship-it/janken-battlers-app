@@ -929,13 +929,6 @@
     position:relative;
     display:flex; align-items:center; justify-content:center;
   }
-  .gr-tier-video{
-    position:absolute; inset:0; z-index:1;
-    width:100%; height:100%; object-fit:cover;
-    opacity:0; pointer-events:none;
-    transition:opacity 0.1s ease;
-  }
-  .gr-tier-video.show{ opacity:1; }
   .gr-circle{
     position:absolute;
     width:240px; height:240px;
@@ -2478,7 +2471,6 @@
       <div class="gr-circle" id="grCircle"></div>
       <div class="gr-burst" id="grBurst"></div>
       <div class="gr-flash" id="grFlash"></div>
-      <video class="gr-tier-video" id="grTierVideo" playsinline muted></video>
       <div class="gr-cards" id="grCards"></div>
     </div>
     <button class="gr-skip hidden" id="grSkip">タップしてスキップ ▸</button>
@@ -2850,18 +2842,34 @@ document.addEventListener('click', function onFirstUserGesture(){
     // element) — iOS Safari's autoplay policy unlocks playback per-element, so any
     // sound not primed on this first tap would otherwise stay silent until the
     // browser happened to allow it some other way.
-    const allAudioEls = new Set([...Object.values(SFX), ...Object.values(BGM)]);
-    allAudioEls.delete(BGM.title);
-    allAudioEls.forEach(el=>{
-      if(!el) return;
-      const wasMuted = el.muted;
-      el.muted = true;
-      el.play().then(()=>{
+    //
+    // IMPORTANT: these are primed ONE AT A TIME (awaited in sequence), not all
+    // fired at once. Muting each element should already make this silent, but
+    // ~20 elements all calling .play() in the same synchronous tick left a real
+    // chance of a brief audible glitch before the mute fully took hold on some
+    // of them — which is exactly what sounded like "a bunch of sounds mixing
+    // together" on the very first tap. Only ever having ONE element "playing"
+    // at any instant during this sequence removes that possibility entirely.
+    const allAudioEls = [...new Set([...Object.values(SFX), ...Object.values(BGM)])]
+      .filter(el => el && el !== BGM.title);
+    (async ()=>{
+      for(const el of allAudioEls){
+        const wasMuted = el.muted;
+        const wasVolume = el.volume;
+        el.muted = true;
+        el.volume = 0;
+        try{
+          await el.play();
+        }catch(e){
+          // autoplay blocked for this element — fine, it'll get its own retry
+          // path the next time something actually tries to play it
+        }
         el.pause();
         el.currentTime = 0;
         el.muted = wasMuted;
-      }).catch(()=>{ el.muted = wasMuted; });
-    });
+        el.volume = wasVolume;
+      }
+    })();
   }
   if(bgmPendingRetry && currentBgmKey){
     const el = BGM[currentBgmKey];
@@ -6277,9 +6285,6 @@ function startGachaReveal(results){
   circle.classList.remove('tier-r','tier-sr','tier-lsr');
   stage.classList.remove('gr-shake');
   skipBtn.classList.remove('hidden');
-  const tierVideoEl = document.getElementById('grTierVideo');
-  if(tierVideoEl){ tierVideoEl.classList.remove('show'); tierVideoEl.pause(); }
-
   // telegraph is driven by the single best card in the whole pull
   const best = results.reduce((a,r)=> TIER_RANK[r.tier] > TIER_RANK[a.tier] ? r : a, results[0]);
   const bestTier = best.tier;
@@ -6293,7 +6298,6 @@ function startGachaReveal(results){
     (bestTier==='lsr' || bestTier==='mgr') ? 3000 :
     bestTier==='sr' ? 2300 : 1700;
 
-  const GACHA_TIER_VIDEO_MAP = { r:'gacha_tier_r.mp4', sr:'gacha_tier_sr.mp4', lsr:'gacha_tier_lsr.mp4', mgr:'gacha_tier_lsr.mp4' };
   function fireTelegraph(){
     if(revealed) return;
     if(bestTier==='n') return; // plain pull keeps the default circle
@@ -6307,21 +6311,6 @@ function startGachaReveal(results){
     }
     const RARITY_SE_MAP = { r:'rarityR', sr:'raritySR', lsr:'rarityLSR', mgr:'rarityMGR' };
     if(RARITY_SE_MAP[bestTier]) playSE(RARITY_SE_MAP[bestTier]);
-    // full-screen tier confirmation clip, layered over the CSS circle/burst —
-    // shares the screen with them rather than replacing them, so a missing/
-    // still-loading video file just means the existing glow carries the beat.
-    const tierVideoFile = GACHA_TIER_VIDEO_MAP[bestTier];
-    const tierVideoEl = document.getElementById('grTierVideo');
-    if(tierVideoFile && tierVideoEl){
-      tierVideoEl.src = tierVideoFile;
-      tierVideoEl.currentTime = 0;
-      tierVideoEl.classList.add('show');
-      const p = tierVideoEl.play();
-      if(p && typeof p.catch === 'function') p.catch(()=>{});
-      const hideVideo = ()=> tierVideoEl.classList.remove('show');
-      tierVideoEl.onended = hideVideo;
-      setTimeout(hideVideo, flipDelay); // don't let it linger past the card flip either
-    }
     if(bestTier==='lsr' || bestTier==='mgr'){
       if(flash){
         flash.classList.remove('go');
@@ -6394,8 +6383,6 @@ function startGachaReveal(results){
     clearTimeout(autoTimer);
     circle.style.display = 'none';
     circle.classList.remove('tier-r','tier-sr','tier-lsr');
-    const tierVideoEl = document.getElementById('grTierVideo');
-    if(tierVideoEl){ tierVideoEl.classList.remove('show'); tierVideoEl.pause(); }
     skipBtn.classList.add('hidden');
     const cards = Array.from(cardsWrap.querySelectorAll('.flip-card:not(.flipped)'));
     cards.forEach((el, i)=>{
