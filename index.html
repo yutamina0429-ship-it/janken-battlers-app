@@ -2843,33 +2843,31 @@ document.addEventListener('click', function onFirstUserGesture(){
     // sound not primed on this first tap would otherwise stay silent until the
     // browser happened to allow it some other way.
     //
-    // IMPORTANT: these are primed ONE AT A TIME (awaited in sequence), not all
-    // fired at once. Muting each element should already make this silent, but
-    // ~20 elements all calling .play() in the same synchronous tick left a real
-    // chance of a brief audible glitch before the mute fully took hold on some
-    // of them — which is exactly what sounded like "a bunch of sounds mixing
-    // together" on the very first tap. Only ever having ONE element "playing"
-    // at any instant during this sequence removes that possibility entirely.
+    // IMPORTANT: play() and pause() are called back-to-back in the SAME
+    // synchronous tick here — deliberately NOT awaiting the play() promise.
+    // The previous version awaited it (waited for playback to actually start)
+    // before pausing, which meant every one of these ~20 elements — muted or
+    // not — had a real, audible window open for however long its play()
+    // promise took to resolve (can be tens to hundreds of ms per file), one
+    // after another. That's what was audible as "everything playing" on the
+    // title tap. Firing play() then pause() immediately, with nothing async
+    // in between, leaves no gap for a render frame to slip through on any of
+    // them — JS is single-threaded, so no audio callback can fire between
+    // these two lines.
     const allAudioEls = [...new Set([...Object.values(SFX), ...Object.values(BGM)])]
       .filter(el => el && el !== BGM.title);
-    (async ()=>{
-      for(const el of allAudioEls){
-        const wasMuted = el.muted;
-        const wasVolume = el.volume;
-        el.muted = true;
-        el.volume = 0;
-        try{
-          await el.play();
-        }catch(e){
-          // autoplay blocked for this element — fine, it'll get its own retry
-          // path the next time something actually tries to play it
-        }
-        el.pause();
-        el.currentTime = 0;
-        el.muted = wasMuted;
-        el.volume = wasVolume;
-      }
-    })();
+    allAudioEls.forEach(el=>{
+      const wasMuted = el.muted;
+      const wasVolume = el.volume;
+      el.muted = true;
+      el.volume = 0;
+      const p = el.play();
+      if(p && typeof p.catch === 'function') p.catch(()=>{});
+      el.pause();
+      el.currentTime = 0;
+      el.muted = wasMuted;
+      el.volume = wasVolume;
+    });
   }
   if(bgmPendingRetry && currentBgmKey){
     const el = BGM[currentBgmKey];
