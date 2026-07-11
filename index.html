@@ -701,6 +701,64 @@
     transition:opacity .3s ease, transform .3s ease;
   }
   .ol-view.active{opacity:1; pointer-events:auto; transform:translateY(0);}
+  .raid-view{
+    position:absolute; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; padding:24px;
+    opacity:0; pointer-events:none; transform:translateY(10px);
+    transition:opacity .3s ease, transform .3s ease;
+  }
+  .raid-view.active{opacity:1; pointer-events:auto; transform:translateY(0);}
+  .raid-diff-btn{
+    width:100%; max-width:320px;
+    display:flex; flex-direction:column; align-items:flex-start; gap:4px;
+    padding:14px 18px; border-radius:14px; border:2px solid rgba(230,200,120,0.4);
+    background:linear-gradient(160deg, rgba(60,20,70,0.55), rgba(20,10,25,0.75));
+    cursor:pointer; text-align:left;
+  }
+  .raid-diff-btn.diff-easy{ border-color:rgba(159,203,230,0.6); }
+  .raid-diff-btn.diff-medium{ border-color:rgba(230,163,232,0.6); }
+  .raid-diff-btn.diff-hard{ border-color:rgba(255,120,120,0.7); }
+  .raid-diff-btn .rdb-name{ font-family:"Shippori Mincho",serif; font-weight:900; font-size:18px; color:var(--gold-bright); }
+  .raid-diff-btn .rdb-sub{ font-size:11px; color:var(--gold); opacity:0.85; }
+
+  /* ============ RAID: BATTLE ============ */
+  #raidBattle{
+    padding:14px 16px; display:flex; flex-direction:column; gap:10px;
+    background:radial-gradient(circle at 50% 0%, #2a1030 0%, #0c0810 70%);
+  }
+  .raid-ult-overlay{
+    position:absolute; inset:0; z-index:40;
+    display:flex; align-items:center; justify-content:center;
+    background:#000; opacity:0; pointer-events:none;
+    transition:opacity 0.15s ease;
+  }
+  .raid-ult-overlay.show{ opacity:1; pointer-events:auto; }
+  .raid-ult-overlay video{ width:100%; height:100%; object-fit:contain; }
+  .raid-boss-wrap{ position:relative; text-align:center; }
+  .raid-boss-img{
+    width:100%; max-height:260px; object-fit:cover; object-position:50% 20%;
+    border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,0.6);
+  }
+  .raid-boss-name{
+    font-family:"Shippori Mincho",serif; font-weight:900; font-size:15px;
+    color:#e8c8ff; margin-top:6px; text-shadow:0 2px 4px rgba(0,0,0,0.6);
+  }
+  .raid-boss-hp{ margin-top:6px; }
+  .raid-allies{ display:flex; gap:10px; }
+  .raid-ally-card{ flex:1; background:rgba(0,0,0,0.35); border-radius:10px; padding:8px 10px; }
+  .raid-ally-label{ font-size:11px; color:var(--gold); margin-bottom:4px; }
+  .raid-log{
+    text-align:center; font-size:12px; color:var(--gold-bright);
+    min-height:32px; padding:4px 8px;
+  }
+  .raid-timer{
+    align-self:center; font-family:"Cinzel",serif; font-weight:800; font-size:22px;
+    color:var(--gold-bright); width:44px; height:44px; border-radius:50%;
+    border:2px solid rgba(230,200,120,0.5); display:flex; align-items:center; justify-content:center;
+  }
+  .raid-timer.urgent{ color:#ff6a6a; border-color:#ff6a6a; }
+  .raid-hand-row{ display:flex; gap:10px; justify-content:center; margin-top:auto; padding-bottom:10px; }
 
   .ol-hero-ic{font-size:46px; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));}
   .ol-lead{font-size:14px; color:var(--gold-bright); text-align:center; margin:0; font-family:"Shippori Mincho",serif; font-weight:700;}
@@ -1791,6 +1849,10 @@
 
   /* ============ RESULT SCREEN ============ */
   #result{justify-content:center; align-items:center; gap:10px; text-align:center;}
+  #raidResult{
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    gap:14px; text-align:center; padding:24px;
+  }
   .result-big{
     font-family:"Dela Gothic One",sans-serif;
     font-size:38px;
@@ -1854,6 +1916,7 @@
   .t-frostwyrm{--c-light:#b8e4f5; --c-mid:#3a7fae; --c-deep:#0a2438;}
   .t-homurabi{--c-light:#ffb8c4; --c-mid:#d8264a; --c-deep:#3a0a16;}
   .t-leviaking{--c-light:#9ab8e8; --c-mid:#3050a0; --c-deep:#0c1830;}
+  .t-erebos{--c-light:#d8c8f0; --c-mid:#7a4aa8; --c-deep:#180c28;}
 
   .fade-flash{
     position:absolute; inset:0; background:#fff;
@@ -2167,12 +2230,12 @@
             <div class="mt-sub">新たな仲間を召喚</div>
           </div>
         </div>
-        <div class="menu-tile battle" data-feature="アーケードバトル">
+        <div class="menu-tile battle" data-feature="レイドバトル">
           <div class="mt-foil"></div>
           <div class="mt-ic">⚔️</div>
           <div>
-            <div class="mt-name">バトル</div>
-            <div class="mt-sub">CPUに挑戦</div>
+            <div class="mt-name">レイド</div>
+            <div class="mt-sub">2人でボスに挑む</div>
           </div>
         </div>
         <div class="menu-tile collection" data-feature="コレクション">
@@ -2197,7 +2260,7 @@
     <!-- bottom nav -->
     <div class="bottom-nav">
       <div class="nav-item active" id="navHome" data-feature="ホーム"><div class="ni-ic">🏠</div><div class="ni-label">ホーム</div></div>
-      <div class="nav-item" data-feature="アーケードバトル"><div class="ni-ic">⚔️</div><div class="ni-label">バトル</div></div>
+      <div class="nav-item" data-feature="レイドバトル"><div class="ni-ic">⚔️</div><div class="ni-label">レイド</div></div>
       <div class="nav-item" data-feature="ガチャ"><div class="ni-ic">🎁</div><div class="ni-label">ガチャ</div></div>
       <div class="nav-item" data-feature="コレクション"><div class="ni-ic">📚</div><div class="ni-label">図鑑</div></div>
       <div class="nav-item" data-feature="メニュー"><div class="ni-ic">☰</div><div class="ni-label">その他</div></div>
@@ -2278,6 +2341,90 @@
         </div>
         <p class="ol-status" id="matchedStatus">まもなく対戦開始…</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ RAID: HOME (difficulty select + matching) ============ -->
+  <section class="screen" id="raidHome">
+    <div class="ol-header">
+      <button class="ol-back" id="raidHomeBack">‹ もどる</button>
+      <div class="ol-title">レイドバトル</div>
+    </div>
+    <div class="ol-body">
+      <!-- view: difficulty select -->
+      <div class="raid-view" data-view="select">
+        <div class="ol-hero-ic">😈</div>
+        <p class="ol-lead">堕天使-エレボスに、2人で挑もう</p>
+        <button class="raid-diff-btn diff-easy" data-diff="easy">
+          <span class="rdb-name">初級</span>
+          <span class="rdb-sub">推奨カードLv10 ・ 報酬 🪙300</span>
+        </button>
+        <button class="raid-diff-btn diff-medium" data-diff="medium">
+          <span class="rdb-name">中級</span>
+          <span class="rdb-sub">推奨カードLv30 ・ 報酬 🪙500 + カード10%</span>
+        </button>
+        <button class="raid-diff-btn diff-hard" data-diff="hard">
+          <span class="rdb-name">上級</span>
+          <span class="rdb-sub">推奨カードLv50 ・ 報酬 🪙900 + カード50%</span>
+        </button>
+      </div>
+      <!-- view: matching -->
+      <div class="raid-view" data-view="matching">
+        <p class="ol-lead">相棒を探しています…</p>
+        <div class="ol-spinner"></div>
+        <p class="ol-status" id="raidMatchingStatus">マッチング中… <span id="raidQuickElapsed">0秒</span></p>
+        <button class="ol-mini-btn" id="raidCancelMatch">キャンセル</button>
+      </div>
+      <!-- view: matched -->
+      <div class="raid-view" data-view="matched">
+        <div class="match-found">⚔️</div>
+        <p class="ol-lead">相棒が見つかった！</p>
+        <div class="vs-names">
+          <span class="vsn-me">あなた</span>
+          <span class="vsn-x">&</span>
+          <span class="vsn-opp" id="raidPartnerName">あいて</span>
+        </div>
+        <p class="ol-status">まもなく突入…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RAID: BATTLE ============ -->
+  <section class="screen" id="raidBattle">
+    <div class="raid-boss-wrap">
+      <img class="raid-boss-img" id="raidBossImg" src="erebos_raid_visual.jpg" alt="堕天使-エレボス">
+      <div class="raid-boss-name">堕天使-エレボス</div>
+      <div class="hpbar-wrap raid-boss-hp"><div class="hpbar" id="raidBossHpBar"></div><div class="hptext" id="raidBossHpText"></div></div>
+    </div>
+    <div class="raid-ult-overlay" id="raidUltOverlay">
+      <video id="raidUltVideo" playsinline muted></video>
+    </div>
+    <div class="raid-allies">
+      <div class="raid-ally-card">
+        <div class="raid-ally-label">あなた</div>
+        <div class="hpbar-wrap"><div class="hpbar" id="raidMyHpBar"></div><div class="hptext" id="raidMyHpText"></div></div>
+      </div>
+      <div class="raid-ally-card">
+        <div class="raid-ally-label" id="raidPartnerLabel">相棒</div>
+        <div class="hpbar-wrap"><div class="hpbar" id="raidPartnerHpBar"></div><div class="hptext" id="raidPartnerHpText"></div></div>
+      </div>
+    </div>
+    <div class="raid-log" id="raidLog">エレボスの気配を感じる…</div>
+    <div class="party-bar" id="raidPartyBar"></div>
+    <div class="raid-timer" id="raidTimer">10</div>
+    <div class="raid-hand-row">
+      <button class="hand-btn" data-hand="rock"><span>✊</span><span class="htag">グー</span></button>
+      <button class="hand-btn" data-hand="scissors"><span>✌️</span><span class="htag">チョキ</span></button>
+      <button class="hand-btn" data-hand="paper"><span>✋</span><span class="htag">パー</span></button>
+    </div>
+  </section>
+
+  <!-- ============ RAID: RESULT ============ -->
+  <section class="screen" id="raidResult">
+    <div class="result-big" id="raidResultBig"></div>
+    <div class="result-sub" id="raidResultSub"></div>
+    <div class="result-links">
+      <button class="btn btn-primary" id="raidResultHome">ホームへ</button>
     </div>
   </section>
 
@@ -2641,6 +2788,7 @@
   <audio id="bgmCollection" preload="auto" loop src="bgm_collection.mp3"></audio>
   <audio id="bgmStory" preload="auto" loop src="bgm_story.mp3"></audio>
   <audio id="bgmOnline" preload="auto" loop src="bgm_online.mp3"></audio>
+  <audio id="bgmRaidBattle" preload="auto" loop src="bgm_raid_battle.mp3"></audio>
   <audio id="bgmGachaHome" preload="auto" loop src="bgm_gacha_home.mp3"></audio>
 
 </div>
@@ -2660,6 +2808,9 @@ const S = {
   gachaReveal:  document.getElementById('gachaReveal'),
   collectionHome: document.getElementById('collectionHome'),
   storyChapters: document.getElementById('storyChapters'),
+  raidHome: document.getElementById('raidHome'),
+  raidBattle: document.getElementById('raidBattle'),
+  raidResult: document.getElementById('raidResult'),
 };
 function go(name){
   Object.values(S).forEach(s=>s.classList.remove('active'));
@@ -2692,6 +2843,7 @@ const BGM = {
   collection: document.getElementById('bgmCollection'),
   story: document.getElementById('bgmStory'),
   online: document.getElementById('bgmOnline'),
+  raidBattle: document.getElementById('bgmRaidBattle'),
   gachaHome: document.getElementById('bgmGachaHome'),
   resultWin: document.getElementById('bgmResultWin'),
   resultLose: document.getElementById('bgmResultLose'),
@@ -2824,7 +2976,7 @@ document.addEventListener('visibilitychange', function(){
 const SCREEN_BGM_MAP = {
   home: 'home', arcadeBattle: 'battle', splash: 'title', title: 'title',
   collectionHome: 'collection', storyChapters: 'story', online: 'online',
-  gachaHome: 'gachaHome',
+  gachaHome: 'gachaHome', raidHome: 'online', raidBattle: 'raidBattle',
 };
 let lastResultWon = true; // set right before each go('arcadeResult') call
 function handleScreenAudio(name){
@@ -3202,7 +3354,7 @@ function toastMessage(text){
 /* menu tiles + coin chip -> 準備中 (battle/deck/gacha/collection open the real flows) */
 document.querySelectorAll('.menu-tile').forEach(tile=>{
   tile.addEventListener('click', ()=>{
-    if(tile.dataset.feature==='アーケードバトル'){ openArcade(); return; }
+    if(tile.dataset.feature==='レイドバトル'){ openRaidHome(); return; }
     if(tile.dataset.feature==='デッキ編成'){ openDeckBuilder(); return; }
     if(tile.dataset.feature==='ガチャ'){ openGachaHome(); return; }
     if(tile.dataset.feature==='コレクション'){ openCollection(); return; }
@@ -3223,10 +3375,10 @@ document.querySelectorAll('.nav-item').forEach(item=>{
       item.classList.add('active');
       return;
     }
-    if(feat==='アーケードバトル'){
+    if(feat==='レイドバトル'){
       document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
       item.classList.add('active');
-      openArcade();
+      openRaidHome();
       return;
     }
     if(feat==='ガチャ'){
@@ -3365,6 +3517,367 @@ const Net = (function(){
     get(){ return impl; },
   };
 })();
+
+/* ============================================================
+   RaidNet — same mock/real split as Net, for the 2-player co-op raid.
+   Kept as a separate object (rather than extending Net) since the event
+   set and server-authoritative flow are different enough to not share
+   much logic, and mixing them risked cross-wiring PvP and raid state.
+   ============================================================ */
+const RaidNet = (function(){
+  let impl = null;
+
+  function makeMock(handlers){
+    let timers = [];
+    function later(fn, ms){ const t=setTimeout(fn,ms); timers.push(t); return t; }
+    function clearAll(){ timers.forEach(clearTimeout); timers=[]; }
+    let mockBossHp = 300, mockTurn = 0;
+    return {
+      quickMatch(difficulty){
+        later(()=> handlers.onQuickWaiting(), 150);
+        later(()=>{
+          mockBossHp = {easy:300, medium:640, hard:440}[difficulty] || 300;
+          mockTurn = 0;
+          handlers.onDeckSelectStart({difficulty, players:[{name:'あなた'},{name:'CPU相棒'}]});
+        }, 1800);
+      },
+      cancelQuick(){ clearAll(); },
+      submitDeck(deck){
+        later(()=> handlers.onBattleStart({
+          yourDeck: deck, opponentDeck: deck.map(c=>({...c})),
+          opponentName:'CPU相棒', boss:{hp:mockBossHp, maxHp:mockBossHp},
+        }), 300);
+      },
+      submitSwap(index){ /* mock: no opponent to notify */ },
+      submitHand(hand){
+        later(()=>{
+          mockTurn++;
+          const dmg = 20;
+          mockBossHp = Math.max(0, mockBossHp - dmg);
+          handlers.onTurnResult({
+            bossHand:['rock','scissors','paper'][Math.floor(Math.random()*3)],
+            turnCount: mockTurn, bossHp: mockBossHp, bossMaxHp: 300,
+            you:{hand, outcome:'win', bossDamage:dmg, playerDamage:0, cardIdx:0, hpAfter:50, cardKO:false},
+            opponent:{hand:'rock', outcome:'draw', bossDamage:0, playerDamage:0, cardIdx:0, hpAfter:50, cardKO:false},
+            ultimate:null, yourAutoSwap:null, opponentAutoSwap:null,
+            bossDefeated: mockBossHp<=0, playersDown:[],
+          });
+        }, 500);
+      },
+      reportEnd(){ /* mock: nothing to tell */ },
+      leave(){ clearAll(); },
+    };
+  }
+
+  function makeReal(handlers){
+    if(typeof io === 'undefined'){
+      console.error('[RaidNet] socket.io client not loaded.');
+      return makeMock(handlers);
+    }
+    const socket = io(SERVER_URL);
+    socket.on('raid_quick_match_waiting', handlers.onQuickWaiting);
+    socket.on('raid_deck_select_start', handlers.onDeckSelectStart);
+    socket.on('raid_battle_start', handlers.onBattleStart);
+    socket.on('raid_turn_result', handlers.onTurnResult);
+    socket.on('raid_opponent_swap', handlers.onOpponentSwap);
+    socket.on('raid_opponent_left', handlers.onOpponentLeft);
+    return {
+      quickMatch(difficulty){ socket.emit('quick_match_raid', {name:playerName, difficulty}); },
+      cancelQuick(){ socket.emit('cancel_quick_match_raid'); },
+      submitDeck(deck){ socket.emit('submit_raid_deck', {deck}); },
+      submitSwap(index){ socket.emit('submit_raid_swap', {index}); },
+      submitHand(hand){ socket.emit('submit_raid_hand', {hand}); },
+      reportEnd(){ socket.emit('report_raid_end'); },
+      leave(){ socket.emit('leave_raid_room'); socket.disconnect(); },
+    };
+  }
+
+  return {
+    connect(handlers){
+      impl = (NET_MODE==='real') ? makeReal(handlers) : makeMock(handlers);
+      return impl;
+    },
+    get(){ return impl; },
+  };
+})();
+
+/* ============================================================
+   Raid controller
+   ============================================================ */
+let raidNet = null;
+let raidQuickTimer = null;
+let raidDifficulty = 'easy';
+let raidPartnerName = 'あいて';
+let raidDeck = null;        // [{ id, hp, maxHp, atk, winBonus, hand }, x3]
+let raidActiveIdx = 0;
+let raidOpponentActiveIdx = 0;
+let raidTurnTimer = null;
+let raidHandLocked = false;
+
+const RAID_DIFF_LABEL = { easy:'初級', medium:'中級', hard:'上級' };
+// reward table per difficulty — coins are granted immediately, card drop is a
+// single weighted roll against the stated chance, drawing a random card from
+// a rarity pool roughly matching the difficulty (no dedicated raid-exclusive
+// card exists yet, so this reuses the normal roster)
+const RAID_REWARDS = {
+  easy:   { coins: 300, dropChance: 0,    dropPool: [] },
+  medium: { coins: 500, dropChance: 0.10, dropPool: 'r' },
+  hard:   { coins: 900, dropChance: 0.50, dropPool: 'sr' },
+};
+
+function raidShowView(name){
+  document.querySelectorAll('#raidHome .raid-view').forEach(v=>{
+    v.classList.toggle('active', v.dataset.view===name);
+  });
+}
+
+function openRaidHome(){
+  go('raidHome');
+  raidShowView('select');
+  raidNet = RaidNet.connect(raidNetHandlers);
+}
+
+function buildRaidDeck(){
+  return selectedDeck.map(id=>{
+    const c = CARDS[id];
+    const st = getCardStats(id);
+    return { id, hp: st.hp, maxHp: st.hp, atk: st.atk, winBonus: c.winBonus, hand: c.hand };
+  });
+}
+
+const raidNetHandlers = {
+  onQuickWaiting(){
+    raidShowView('matching');
+    let sec = 0;
+    clearInterval(raidQuickTimer);
+    const el = document.getElementById('raidQuickElapsed');
+    if(el) el.textContent = '0秒';
+    raidQuickTimer = setInterval(()=>{ sec++; if(el) el.textContent = sec+'秒'; }, 1000);
+  },
+  onDeckSelectStart(d){
+    clearInterval(raidQuickTimer);
+    raidDifficulty = d.difficulty || 'easy';
+    raidPartnerName = (d.players[1] && d.players[1].name) || 'あいて';
+    document.getElementById('raidPartnerName').textContent = raidPartnerName;
+    playSE('matchFound');
+    raidShowView('matched');
+    raidDeck = buildRaidDeck();
+    raidActiveIdx = 0;
+    raidOpponentActiveIdx = 0;
+    setTimeout(()=> raidNet.submitDeck(raidDeck), 900);
+  },
+  onBattleStart(d){
+    raidDeck = d.yourDeck;
+    raidActiveIdx = 0;
+    raidOpponentActiveIdx = 0;
+    document.getElementById('raidPartnerLabel').textContent = d.opponentName || raidPartnerName;
+    updateRaidHpBars({
+      bossHp:d.boss.hp, bossMaxHp:d.boss.maxHp,
+      myHp:raidDeck[0].hp, myMaxHp:raidDeck[0].maxHp,
+      partnerHp:d.opponentDeck[0].hp, partnerMaxHp:d.opponentDeck[0].maxHp,
+    });
+    document.getElementById('raidLog').textContent = `${RAID_DIFF_LABEL[raidDifficulty]}のエレボスが目を覚ました…`;
+    document.getElementById('raidBossImg').src = 'erebos_raid_visual.jpg';
+    renderRaidPartyBar();
+    go('raidBattle');
+    raidStartTurnTimer();
+  },
+  onOpponentSwap(d){
+    raidOpponentActiveIdx = d.index;
+  },
+  onTurnResult(d){
+    clearRaidTurnTimer();
+    raidHandLocked = false;
+    raidDeck[d.you.cardIdx].hp = d.you.hpAfter;
+    const partnerLabel = document.getElementById('raidPartnerLabel').textContent;
+    const logParts = [];
+    if(d.you.outcome==='win') logParts.push(`あなたの勝ち！ボスに${d.you.bossDamage}ダメージ`);
+    else if(d.you.outcome==='lose') logParts.push(`あなたの負け…${d.you.playerDamage}ダメージ`);
+    else logParts.push('あなたはあいこ');
+    if(d.you.cardKO) logParts.push(`${CARDS[raidDeck[d.you.cardIdx].id].name}は倒れた…`);
+    if(d.opponent){
+      if(d.opponent.outcome==='win') logParts.push(`${partnerLabel}の勝ち！`);
+      else if(d.opponent.outcome==='lose') logParts.push(`${partnerLabel}が被弾`);
+    }
+
+    const continueTurn = ()=>{
+      if(d.ultimate){
+        logParts.push('💥 エレボスの必殺技「堕天の福音」！ 全員に大ダメージ');
+        if(d.ultimate.you) raidDeck[d.ultimate.you.cardIdx].hp = d.ultimate.you.hpAfter;
+      }
+      if(d.yourAutoSwap!=null){
+        raidActiveIdx = d.yourAutoSwap;
+        logParts.push(`${CARDS[raidDeck[raidActiveIdx].id].name}に交代！`);
+      }
+      if(d.opponentAutoSwap!=null) raidOpponentActiveIdx = d.opponentAutoSwap;
+
+      document.getElementById('raidLog').textContent = logParts.join(' / ');
+      updateRaidHpBars({
+        bossHp:d.bossHp, bossMaxHp:d.bossMaxHp,
+        myHp:raidDeck[raidActiveIdx].hp, myMaxHp:raidDeck[raidActiveIdx].maxHp,
+        partnerHp: d.opponent ? d.opponent.hpAfter : null,
+      });
+      renderRaidPartyBar();
+
+      if(d.bossDefeated || (d.playersDown && d.playersDown.length>0)){
+        raidNet.reportEnd();
+        setTimeout(()=> showRaidResult(d.bossDefeated && (!d.playersDown || d.playersDown.length===0)), 900);
+        return;
+      }
+      raidStartTurnTimer();
+    };
+
+    // the ultimate clip plays BEFORE the damage/log lands, same as the normal
+    // battle's ULT_VIDEO_MAP treatment — falls straight through to continueTurn
+    // if there's no video file yet (missing/still being generated).
+    if(d.ultimate){
+      playSE('rarityLSR');
+      playUltimateVideo('erebos_raid_ult.mp4', continueTurn, 'raidUltOverlay', 'raidUltVideo');
+    } else {
+      continueTurn();
+    }
+  },
+  onOpponentLeft(){
+    clearRaidTurnTimer();
+    toastMessage('相棒が退室しました');
+    go('home');
+  },
+};
+
+function renderRaidPartyBar(){
+  const bar = document.getElementById('raidPartyBar');
+  if(!bar || !raidDeck) return;
+  bar.innerHTML = '';
+  raidDeck.forEach((card, i)=>{
+    const c = CARDS[card.id];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'party-slot' + (i===raidActiveIdx ? ' active' : '') + (card.hp<=0 ? ' dead' : '');
+    b.innerHTML = `<img src="${c.pixelImg || c.img}" alt=""><span class="ps-hp">${Math.max(0,card.hp)}</span>`;
+    b.addEventListener('click', ()=> tryRaidSwitch(i));
+    bar.appendChild(b);
+  });
+}
+
+function tryRaidSwitch(i){
+  if(raidHandLocked) return; // same rule as normal battle: only free to swap while still picking a hand
+  if(i === raidActiveIdx) return;
+  if(raidDeck[i].hp <= 0){ toastMessage('倒れたモンスターは出せない'); return; }
+  raidActiveIdx = i;
+  raidNet.submitSwap(i);
+  renderRaidPartyBar();
+  updateRaidHpBars({ myHp: raidDeck[i].hp, myMaxHp: raidDeck[i].maxHp });
+  document.getElementById('raidLog').textContent = `${CARDS[raidDeck[i].id].name} に交代！`;
+}
+
+function updateRaidHpBars({bossHp, bossMaxHp, myHp, myMaxHp, partnerHp, partnerMaxHp}){
+  if(bossHp!=null && bossMaxHp!=null){
+    const pct = Math.max(0, Math.round(bossHp/bossMaxHp*100));
+    document.getElementById('raidBossHpBar').style.width = pct+'%';
+    document.getElementById('raidBossHpText').textContent = `${Math.max(0,bossHp)} / ${bossMaxHp}`;
+  }
+  if(myHp!=null){
+    const maxHp = myMaxHp || raidDeck[raidActiveIdx].maxHp;
+    const pct = Math.max(0, Math.round(myHp/maxHp*100));
+    document.getElementById('raidMyHpBar').style.width = pct+'%';
+    document.getElementById('raidMyHpText').textContent = `${Math.max(0,myHp)} / ${maxHp}`;
+  }
+  if(partnerHp!=null){
+    const maxHp = partnerMaxHp || 999; // opponent's exact maxHp for a benched card isn't tracked client-side; bar still reads correctly off raw HP
+    const pct = Math.max(0, Math.round(partnerHp/maxHp*100));
+    document.getElementById('raidPartnerHpBar').style.width = pct+'%';
+    document.getElementById('raidPartnerHpText').textContent = `${Math.max(0,partnerHp)}`;
+  }
+}
+
+function raidStartTurnTimer(){
+  clearRaidTurnTimer();
+  raidHandLocked = false;
+  const timerEl = document.getElementById('raidTimer');
+  let secLeft = 10;
+  timerEl.textContent = secLeft;
+  timerEl.classList.remove('urgent');
+  raidTurnTimer = setInterval(()=>{
+    secLeft--;
+    timerEl.textContent = Math.max(0, secLeft);
+    if(secLeft<=3) timerEl.classList.add('urgent');
+    if(secLeft<=0){
+      clearRaidTurnTimer();
+      if(!raidHandLocked) submitRaidHand(['rock','scissors','paper'][Math.floor(Math.random()*3)]);
+    }
+  }, 1000);
+}
+function clearRaidTurnTimer(){ clearInterval(raidTurnTimer); raidTurnTimer=null; }
+
+function submitRaidHand(hand){
+  if(raidHandLocked) return;
+  if(raidDeck[raidActiveIdx].hp <= 0) return; // shouldn't happen (auto-swap keeps active alive) but guard anyway
+  raidHandLocked = true;
+  playSE('tap');
+  document.getElementById('raidLog').textContent = '相棒の選択を待っています…';
+  raidNet.submitHand(hand);
+}
+
+// grants the actual reward on a raid win: coins always, a single weighted
+// card-drop roll for medium/hard. Loss grants nothing (matches arcade/story
+// convention of no consolation reward on defeat).
+function grantRaidReward(){
+  const reward = RAID_REWARDS[raidDifficulty];
+  playerCoins += reward.coins;
+  playSE('coin');
+  updateCoinDisplay();
+  let droppedCardName = null;
+  if(reward.dropChance>0 && Math.random()<reward.dropChance){
+    const pool = CARD_POOL.filter(id=>CARDS[id].rarity===reward.dropPool);
+    if(pool.length){
+      const id = pool[Math.floor(Math.random()*pool.length)];
+      grantCard(id);
+      droppedCardName = CARDS[id].name;
+    }
+  }
+  saveState();
+  return { coins: reward.coins, droppedCardName };
+}
+
+function showRaidResult(won){
+  const big = document.getElementById('raidResultBig');
+  const sub = document.getElementById('raidResultSub');
+  if(won){
+    const { coins, droppedCardName } = grantRaidReward();
+    big.textContent = 'VICTORY';
+    big.className = 'result-big victory';
+    sub.innerHTML = `エレボスを撃破した！<br>🪙${coins} 獲得` + (droppedCardName ? `<br>✨ ${droppedCardName} を手に入れた！` : '');
+    playSE('victoryStinger');
+  } else {
+    big.textContent = 'DEFEAT';
+    big.className = 'result-big defeat';
+    sub.innerHTML = '力及ばず、エレボスに敗れた…';
+  }
+  go('raidResult');
+}
+
+document.getElementById('raidHomeBack').addEventListener('click', ()=>{
+  if(raidNet) raidNet.leave();
+  clearInterval(raidQuickTimer);
+  go('home');
+});
+document.getElementById('raidCancelMatch').addEventListener('click', ()=>{
+  if(raidNet) raidNet.cancelQuick();
+  raidShowView('select');
+});
+document.querySelectorAll('.raid-diff-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    playSE('tap');
+    raidNet.quickMatch(btn.dataset.diff);
+  });
+});
+document.querySelectorAll('#raidBattle .hand-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> submitRaidHand(btn.dataset.hand));
+});
+document.getElementById('raidResultHome').addEventListener('click', ()=>{
+  if(raidNet) raidNet.leave();
+  go('home');
+});
 
 /* ============================================================
    Lobby controller
@@ -4268,8 +4781,23 @@ const CARDS = {
              '<span class="killshot">相手がパーを出した場合</span>、追加で10ダメージ。',
              'デメリット：<b>チョキで負ける</b>と、自分が追加で7ダメージを受ける。'
            ] },
+  erebos: { id:'erebos', name:'堕天使-エレボス', attr:'闇冥', theme:'t-erebos', rarity:'lsr', num:'LSR-02',
+           hand:'paper', hp:300, atk:74, winBonus:30, lossMitigation:5, img:'card_erebos_portrait.webp', cardImg:'card_erebos_full.webp', pixelImg:'card_erebos_sprite.webp',
+           flavor:'かつての光は、今は闇となって降り注ぐ。それでも、微笑みは変わらない。',
+           colors:{light:'#D8C8F0', mid:'#7A4AA8', deep:'#180C28', barLight:'#5C3688', barDeep:'#12081C',
+                    accent:'#E8DCF6', nameColor:'#F4EEFC', gem:'#8F5EC0', tagFg:'#EAE0F6'},
+           special:{
+             opponentAtkDebuffOnFavoredWin: { hand:'paper', amount:6, moveName:'黒羽の呪縛' },  // パーで勝つたびに相手ATKを永続-6
+             aikoFavoredDamageOpponent: { hand:'paper', amount:20, moveName:'堕天の一睨み' },    // パーであいこの場合、相手に20ダメージ
+             ultimatePercentCurrentHp: { percent:0.10, moveName:'堕天の福音' }                    // 必殺技: 相手の現HPの10%を削る(固定ダメージではなく割合)
+           },
+           effects:[
+             '<span class="killshot">パーで勝つたびに</span>、相手の<b>ATKを-6</b>（永続蓄積）。',
+             '<b>パーであいこ</b>で相手に20ダメージ。',
+             '<span class="killshot">必殺技「堕天の福音」</span>：相手の<b>現在HPの10%</b>を削る。'
+           ] },
 };
-const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval','frostwyrm','homurabi','leviaking'];
+const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval','frostwyrm','homurabi','leviaking','erebos'];
 
 const HAND_EMOJI = { rock:'✊', scissors:'✌️', paper:'🖐️' };
 const HAND_JP    = { rock:'グー', scissors:'チョキ', paper:'パー' };
@@ -4818,11 +5346,24 @@ function canUseUltimate(mon){
 // THAT SAME technique as their ultimate (same moveName, bigger numbers) instead
 // of the flat generic nuke — so pulling a rare card stays meaningfully different
 // even at the gauge-release "spotlight" moment, not just during normal exchanges.
-function getUltimateEffect(mon){
+//
+// `opponent` is only needed for ultimatePercentCurrentHp (a small number of
+// cards, currently just erebos) — everything else ignores it. Passed in
+// explicitly rather than reached for globally so this function stays a pure
+// "given these two monsters, what happens" calculation.
+function getUltimateEffect(mon, opponent){
   const sp = mon.special;
   const fallback = { damage: Math.round(mon.atk*ULT_MULT*DAMAGE_PACE), heal:0, debuff:0, moveName:`${mon.name}・渾身の一撃`, type:'ultimate' };
   if(!sp) return fallback;
 
+  // dedicated ultimate-only mechanic (bypasses the "amplified passive" pattern
+  // below entirely) — checked first since it's an explicit design choice for
+  // that card's ultimate specifically, not a fallback derived from a passive.
+  if(sp.ultimatePercentCurrentHp && opponent){
+    const a = sp.ultimatePercentCurrentHp;
+    const dmg = Math.round(opponent.curHp * a.percent);
+    return { damage: dmg, heal:0, debuff:0, moveName:a.moveName, type:'ultimate' };
+  }
   if(sp.selfHealOnFavoredWin){
     const a = sp.selfHealOnFavoredWin;
     return { damage: Math.round(mon.atk*1.5*DAMAGE_PACE), heal: a.amount*5, debuff:0, moveName:a.moveName, type:'ultimate' };
@@ -4864,10 +5405,11 @@ const ULT_VIDEO_MAP = {
   frostwyrm: 'ult_frostwyrm.mp4',
   homurabi:  'ult_homurabi.mp4',
   leviaking: 'ult_leviaking.mp4',
+  erebos:    'ult_erebos.mp4',
 };
-function playUltimateVideo(fileName, onDone){
-  const overlay = document.getElementById('ultVideoOverlay');
-  const vid = document.getElementById('ultVideoPlayer');
+function playUltimateVideo(fileName, onDone, overlayId, videoId){
+  const overlay = document.getElementById(overlayId || 'ultVideoOverlay');
+  const vid = document.getElementById(videoId || 'ultVideoPlayer');
   if(!overlay || !vid){ onDone(); return; }
   let done = false;
   const finish = ()=>{
@@ -4911,7 +5453,7 @@ function doResolveUltimateTurn(playerUsed, cpuUsed, playerMon, cpuMon){
   let cutinCount = 0;
 
   if(playerUsed){
-    const eff = getUltimateEffect(playerMon);
+    const eff = getUltimateEffect(playerMon, cpuMon);
     cpuMon.curHp -= eff.damage;
     if(eff.heal>0) playerMon.curHp = Math.min(playerMon.maxHp, playerMon.curHp + eff.heal);
     if(eff.debuff>0) cpuMon.atk = Math.max(1, cpuMon.atk - eff.debuff);
@@ -4926,7 +5468,7 @@ function doResolveUltimateTurn(playerUsed, cpuUsed, playerMon, cpuMon){
     cutinCount++;
   }
   if(cpuUsed){
-    const eff = getUltimateEffect(cpuMon);
+    const eff = getUltimateEffect(cpuMon, playerMon);
     playerMon.curHp -= eff.damage;
     if(eff.heal>0) cpuMon.curHp = Math.min(cpuMon.maxHp, cpuMon.curHp + eff.heal);
     if(eff.debuff>0) playerMon.atk = Math.max(1, playerMon.atk - eff.debuff);
@@ -5453,8 +5995,22 @@ function endlessCpuMult(floor){
   return isBossFloor(floor) ? base * 1.6 : base;
 }
 
-function endlessCpuDeck(){
-  const pool = CARD_POOL.filter(id => CARDS[id].rarity !== 'mgr');
+// which rarities are even allowed to appear in the CPU's deck, by floor —
+// without this, endlessCpuDeck() was drawing from the ENTIRE roster with no
+// regard for floor number, so an LSR (150hp/32+atk, plus ultimate access)
+// could show up as early as floor 1 against a starter N-tier deck (50hp/10atk).
+// mult still layers on top of whatever's drawn, but that alone can't fix a
+// bad rarity draw at low floors.
+function endlessAllowedRarities(floor){
+  if(floor <= 10) return ['n'];
+  if(floor <= 25) return ['n','r'];
+  if(floor <= 45) return ['n','r','sr'];
+  return ['n','r','sr','lsr']; // mgr never included, same as before
+}
+
+function endlessCpuDeck(floor){
+  const allowed = new Set(endlessAllowedRarities(floor));
+  const pool = CARD_POOL.filter(id => allowed.has(CARDS[id].rarity));
   const deck = [];
   const used = new Set();
   while(deck.length < 3){
@@ -5473,7 +6029,7 @@ function beginEndlessRun(){
 }
 
 function startEndlessFloor(){
-  const cpuOpts = { deck: endlessCpuDeck(), mult: endlessCpuMult(ENDLESS.floor) };
+  const cpuOpts = { deck: endlessCpuDeck(ENDLESS.floor), mult: endlessCpuMult(ENDLESS.floor) };
   if(!G || !G.player){
     // run start: player roster is freshly built at full HP
     G = newGame(cpuOpts);
@@ -6214,6 +6770,9 @@ const GACHA_POOL = {
         'amanoha','tensaval'],
   sr:  ['shizarisu','ascalon','valkis','frostwyrm','homurabi','leviaking'], // godschallenge season cards, folded into the same pool
   lsr: ['sousei_ou','aither'],                  // godschallenge season cards, folded into the same pool
+  // erebos is deliberately NOT in this pool — special-acquisition-only character,
+  // never drops from the gacha. It stays in CARD_POOL/CARDS so it can still be
+  // owned, viewed, and battled with once granted some other way.
   mgr: ['gcp_rock','gcp_scissors','gcp_paper'], // kept as data only — not in GACHA_RATES, so it never drops.
                                                   // (Monetization needs publicly-accurate odds, so a hidden/
                                                   // unlisted rarity can't be sold for real money. If MGR ever
