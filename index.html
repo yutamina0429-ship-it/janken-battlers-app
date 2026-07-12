@@ -2004,6 +2004,7 @@
   .t-homurabi{--c-light:#ffb8c4; --c-mid:#d8264a; --c-deep:#3a0a16;}
   .t-leviaking{--c-light:#9ab8e8; --c-mid:#3050a0; --c-deep:#0c1830;}
   .t-erebos{--c-light:#d8c8f0; --c-mid:#7a4aa8; --c-deep:#180c28;}
+  .t-astragal{--c-light:#ffd9a0; --c-mid:#d8541c; --c-deep:#3a1408;}
 
   .fade-flash{
     position:absolute; inset:0; background:#fff;
@@ -3770,6 +3771,33 @@ const RAID_BOSSES = {
     },
     locked: false,
   },
+  // 龍王-アストラガル(常設レイドボス)。必殺技「龍の息吹」のダメージ計算は
+  // サーバー側 RAID_BOSS_REGISTRY.astragal で行う(固定20/ランダム50-200/ランダム200-即死)。
+  // クライアント側はボス名・演出・報酬テーブルだけ持てばOK。
+  // ※画像・動画は未着手。card_astragal_*.webp / astragal_raid_visual.jpg / ult_astragal.mp4 が要準備。
+  astragal: {
+    id: 'astragal',
+    name: '龍王-アストラガル',
+    img: 'astragal_raid_visual.jpg',
+    badge: '常設レイドボス',
+    ultVideo: 'ult_astragal.mp4',
+    ultMoveName: '龍の息吹',
+    logAwaken: (diffLabel) => `${diffLabel}のアストラガルが咆哮を上げた…`,
+    logPickingHand: 'アストラガルが手を選んでいる…',
+    logVictory: (name) => `${name}を撃破した！`,
+    logDefeat: (name) => `力及ばず、${name}に敗れた…`,
+    diffSub: {
+      easy:   '推奨カードLv10 ・ 報酬 🪙300',
+      medium: '推奨カードLv30 ・ 報酬 🪙500 + カード10%',
+      hard:   '推奨カードLv50 ・ 報酬 🪙900 + カード50%',
+    },
+    rewards: {
+      easy:   { coins: 300, dropChance: 0,    dropCard: null },
+      medium: { coins: 500, dropChance: 0.10, dropCard: 'astragal' },
+      hard:   { coins: 900, dropChance: 0.50, dropCard: 'astragal' },
+    },
+    locked: false,
+  },
   // 次のボスはここに追加(素材・数値が決まり次第 locked:false にして解放)。
   // 例:
   // nextboss: { id:'nextboss', name:'？？？', img:'', badge:'近日実装',
@@ -5123,8 +5151,21 @@ const CARDS = {
              '<b>パーであいこ</b>で相手に20ダメージ。',
              '<span class="killshot">必殺技「堕天の福音」</span>：相手の<b>現在HPの50%</b>を削る。'
            ] },
+  // 龍王-アストラガル: 常設レイドボス「アストラガル」の撃破報酬ドロップ専用SRカード(通常ガチャには出現しない)。
+  // hp/atk/winBonus/lossMitigation とspecial%は暫定値(既存SR: ホムラビ/リヴァイア相当) — 素材確定時に調整可。
+  astragal: { id:'astragal', name:'龍王-アストラガル', attr:'炎', theme:'t-astragal', rarity:'sr', num:'SR-05',
+           hand:'paper', hp:152, atk:36, winBonus:15, lossMitigation:7, img:'card_astragal_portrait.webp', cardImg:'card_astragal_full.webp', pixelImg:'card_astragal_sprite.webp',
+           flavor:'(暫定) 常設のレイドに座す火竜の王。その息吹に触れて生き延びた者はいない。',
+           colors:{light:'#FFD9A0', mid:'#D8541C', deep:'#3A1408', barLight:'#B8420C', barDeep:'#2A0E04',
+                    accent:'#FFE8C8', nameColor:'#FFF2E0', gem:'#E86A20', tagFg:'#FFE4C0'},
+           special:{
+             ultimateRandomDamage: { min:35, max:500, moveName:'龍の息吹' }  // 必殺技: 35〜500のランダムダメージ
+           },
+           effects:[
+             '<span class="killshot">必殺技「龍の息吹」</span>：<b>35〜500のランダムダメージ</b>。'
+           ] },
 };
-const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval','frostwyrm','homurabi','leviaking','erebos'];
+const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval','frostwyrm','homurabi','leviaking','erebos','astragal'];
 
 const HAND_EMOJI = { rock:'✊', scissors:'✌️', paper:'🖐️' };
 const HAND_JP    = { rock:'グー', scissors:'チョキ', paper:'パー' };
@@ -5691,6 +5732,11 @@ function getUltimateEffect(mon, opponent){
     const dmg = Math.round(opponent.curHp * a.percent);
     return { damage: dmg, heal:0, debuff:0, moveName:a.moveName, type:'ultimate' };
   }
+  if(sp.ultimateRandomDamage){
+    const a = sp.ultimateRandomDamage;
+    const dmg = a.min + Math.floor(Math.random() * (a.max - a.min + 1));
+    return { damage: dmg, heal:0, debuff:0, moveName:a.moveName, type:'ultimate' };
+  }
   if(sp.selfHealOnFavoredWin){
     const a = sp.selfHealOnFavoredWin;
     return { damage: Math.round(mon.atk*1.5*DAMAGE_PACE), heal: a.amount*5, debuff:0, moveName:a.moveName, type:'ultimate' };
@@ -5733,6 +5779,7 @@ const ULT_VIDEO_MAP = {
   homurabi:  'ult_homurabi.mp4',
   leviaking: 'ult_leviaking.mp4',
   erebos:    'erebos_raid_ult.mp4',
+  astragal:  'astragal_raid_ult.mp4',
 };
 function playUltimateVideo(fileName, onDone, overlayId, videoId){
   const overlay = document.getElementById(overlayId || 'ultVideoOverlay');
