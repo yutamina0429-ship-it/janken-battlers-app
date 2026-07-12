@@ -3183,6 +3183,8 @@ let playerName = 'プレイヤー';  // shown on the home screen and sent to the
 //  STAMINA (consumed by endless runs and story chapters; arcade/online are free)
 // ============================================================
 const DEMO_INFINITE_STAMINA = true; // デモ用: falseに戻せば通常のスタミナ消費に戻る
+const DEMO_INFINITE_COINS = true;   // デモ用: falseに戻せば通常のコイン消費に戻る
+const DEMO_COIN_FLOOR = 999999;     // 無限時、コインがこれ未満になったら補充する下限値
 const STAMINA_MAX = 5;
 const STAMINA_COST = 1;
 const STAMINA_REGEN_MS = 20 * 60 * 1000; // 1 point every 20 minutes, real-time (accrues even while the app is closed)
@@ -3403,6 +3405,7 @@ function loadState(){
 }
 
 function updateCoinDisplay(){
+  if(DEMO_INFINITE_COINS && playerCoins < DEMO_COIN_FLOOR) playerCoins = DEMO_COIN_FLOOR;
   const a = document.getElementById('coinVal');
   const b = document.getElementById('gachaCoinVal');
   if(a) a.textContent = playerCoins;
@@ -7026,12 +7029,12 @@ document.getElementById('gachaTen').addEventListener('click', ()=> tryPullGacha(
 
 let lastPull = null; // remembered for the "もう一度引く" quick re-pull on the results screen
 function tryPullGacha(count, cost){
-  if(playerCoins < cost){
+  if(!DEMO_INFINITE_COINS && playerCoins < cost){
     toastMessage('コインが足りません');
     return;
   }
   playSE('gachaPull');
-  playerCoins -= cost;
+  if(!DEMO_INFINITE_COINS) playerCoins -= cost;
   updateCoinDisplay();
   lastPull = { count, cost };
   const results = [];
@@ -7275,8 +7278,8 @@ function renderEnhanceModal(){
 document.getElementById('enhLevelBtn').addEventListener('click', ()=>{
   const id = enhanceTargetId; if(!id) return;
   const cost = enhanceCost(getCardLevel(id));
-  if(playerCoins < cost){ toastMessage('コインが足りません'); return; }
-  playerCoins -= cost;
+  if(!DEMO_INFINITE_COINS && playerCoins < cost){ toastMessage('コインが足りません'); return; }
+  if(!DEMO_INFINITE_COINS) playerCoins -= cost;
   cardLevels[id] = getCardLevel(id) + 1;
   updateCoinDisplay();
   saveState();
