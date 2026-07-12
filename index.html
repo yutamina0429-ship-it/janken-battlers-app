@@ -725,7 +725,7 @@
 
   /* ============ RAID: BATTLE ============ */
   #raidBattle{
-    padding:14px 16px; display:flex; flex-direction:column; gap:10px;
+    padding:14px 16px; display:flex; flex-direction:column; gap:8px;
     background:radial-gradient(circle at 50% 0%, #2a1030 0%, #0c0810 70%);
   }
   .raid-ult-overlay{
@@ -736,9 +736,13 @@
   }
   .raid-ult-overlay.show{ opacity:1; pointer-events:auto; }
   .raid-ult-overlay video{ width:100%; height:100%; object-fit:contain; }
-  .raid-boss-wrap{ position:relative; text-align:center; }
+  .raid-boss-wrap{
+    position:relative; text-align:center;
+    flex:1 1 auto; min-height:0; display:flex; flex-direction:column;
+  }
   .raid-boss-img{
-    width:100%; max-height:340px; object-fit:cover; object-position:50% 12%;
+    width:100%; flex:1 1 auto; min-height:70px; max-height:340px;
+    object-fit:cover; object-position:50% 12%;
     border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,0.6);
   }
   .raid-boss-name{
@@ -763,7 +767,8 @@
     border:2px solid rgba(230,200,120,0.5); display:flex; align-items:center; justify-content:center;
   }
   .raid-timer.urgent{ color:#ff6a6a; border-color:#ff6a6a; }
-  .raid-hand-row{ display:flex; gap:10px; justify-content:center; margin-top:auto; padding-bottom:10px; }
+  .raid-hand-row{ display:flex; gap:10px; justify-content:center; padding-bottom:10px; flex-shrink:0; }
+  .raid-timer{ flex-shrink:0; }
 
   .raid-ult-warning{
     display:none; text-align:center; font-family:"Shippori Mincho",serif; font-weight:800; font-size:12px;
@@ -3188,6 +3193,7 @@ let lastStaminaTime = Date.now(); // reference point regen is measured from
 // only consumes whole intervals from lastStaminaTime so partial progress toward the
 // next point isn't lost (rather than just resetting the clock to "now" every check).
 function regenStamina(){
+  if(DEMO_INFINITE_STAMINA){ stamina = STAMINA_MAX; lastStaminaTime = Date.now(); return; }
   if(stamina >= STAMINA_MAX){ lastStaminaTime = Date.now(); return; }
   const elapsed = Date.now() - lastStaminaTime;
   const gained = Math.floor(elapsed / STAMINA_REGEN_MS);
@@ -3204,9 +3210,9 @@ function minutesUntilNextStamina(){
 function updateStaminaDisplay(){
   regenStamina();
   const el = document.getElementById('staminaVal');
-  if(el) el.textContent = DEMO_INFINITE_STAMINA ? '∞' : stamina;
+  if(el) el.textContent = stamina;
   const sub = document.getElementById('staminaMaxSub');
-  if(sub) sub.textContent = DEMO_INFINITE_STAMINA ? '' : `/${STAMINA_MAX}`;
+  if(sub) sub.textContent = `/${STAMINA_MAX}`;
 }
 
 function getCardLevel(id){ return cardLevels[id] || 1; }
@@ -3895,7 +3901,7 @@ function raidRevealResult(d){
   // if there's no video file yet (missing/still being generated).
   if(d.ultimate){
     playSE('rarityLSR');
-    playUltimateVideo('erebos_raid_ult.mp4', continueTurn, 'raidUltOverlay', 'raidUltVideo');
+    playUltimateVideo('ult_erebos.mp4', continueTurn, 'raidUltOverlay', 'raidUltVideo');
   } else {
     continueTurn();
   }
@@ -4985,12 +4991,12 @@ const CARDS = {
            special:{
              opponentAtkDebuffOnFavoredWin: { hand:'paper', amount:6, moveName:'黒羽の呪縛' },  // パーで勝つたびに相手ATKを永続-6
              aikoFavoredDamageOpponent: { hand:'paper', amount:20, moveName:'堕天の一睨み' },    // パーであいこの場合、相手に20ダメージ
-             ultimatePercentCurrentHp: { percent:0.10, moveName:'堕天の福音' }                    // 必殺技: 相手の現HPの10%を削る(固定ダメージではなく割合)
+             ultimatePercentCurrentHp: { percent:0.50, moveName:'堕天の福音' }                    // 必殺技: 相手の現HPの50%を削る(固定ダメージではなく割合)
            },
            effects:[
              '<span class="killshot">パーで勝つたびに</span>、相手の<b>ATKを-6</b>（永続蓄積）。',
              '<b>パーであいこ</b>で相手に20ダメージ。',
-             '<span class="killshot">必殺技「堕天の福音」</span>：相手の<b>現在HPの10%</b>を削る。'
+             '<span class="killshot">必殺技「堕天の福音」</span>：相手の<b>現在HPの50%</b>を削る。'
            ] },
 };
 const CARD_POOL = ['goo','paa','choki','yami','kusa','doro','hika','usagi','tori','risu','katsumuri','sousei_ou','gcp_rock','gcp_scissors','gcp_paper','fubuki','ignis','biribiri','lumina','kurogane','thornweed','garock','abyssal','shizarisu','glacia','kaguray','raikou','sylvan','ascalon','valkis','aither','tsurara','hibana','shibire','hagiri','kurousa','karasu','mogura','ganseki','kouki','hikariga','awagaeru','fuwakurage','shiogani','amausa','tsubame','hayabusa','shirozuki','hakuretsu','kagutsuchi','ikazuchi','leolite','hikarimiko','kuragari','yomisasori','togebachi','dogaiou','nendori','mizumusashi','sazarenami','tensho','amanoha','tensaval','frostwyrm','homurabi','leviaking','erebos'];
@@ -5601,7 +5607,7 @@ const ULT_VIDEO_MAP = {
   frostwyrm: 'ult_frostwyrm.mp4',
   homurabi:  'ult_homurabi.mp4',
   leviaking: 'ult_leviaking.mp4',
-  erebos:    'ult_erebos.mp4',
+  erebos:    'erebos_raid_ult.mp4',
 };
 function playUltimateVideo(fileName, onDone, overlayId, videoId){
   const overlay = document.getElementById(overlayId || 'ultVideoOverlay');
