@@ -738,7 +738,7 @@
   .raid-ult-overlay video{ width:100%; height:100%; object-fit:contain; }
   .raid-boss-wrap{ position:relative; text-align:center; }
   .raid-boss-img{
-    width:100%; max-height:260px; object-fit:cover; object-position:50% 20%;
+    width:100%; max-height:340px; object-fit:cover; object-position:50% 12%;
     border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,0.6);
   }
   .raid-boss-name{
@@ -746,6 +746,10 @@
     color:#e8c8ff; margin-top:6px; text-shadow:0 2px 4px rgba(0,0,0,0.6);
   }
   .raid-boss-hp{ margin-top:6px; }
+  .raid-boss-ult-row{ display:flex; align-items:center; gap:6px; margin-top:5px; }
+  .raid-boss-ult-row .rbu-label{ font-size:9px; color:#c9a3e8; flex-shrink:0; }
+  .raid-boss-ult-row .rbu-gauge{ flex:1; margin-top:0; }
+  .raid-boss-ult-row .ult-gauge{ background:linear-gradient(90deg,#5c2e88,#c98ae8); }
   .raid-allies{ display:flex; gap:10px; }
   .raid-ally-card{ flex:1; background:rgba(0,0,0,0.35); border-radius:10px; padding:8px 10px; }
   .raid-ally-label{ font-size:11px; color:var(--gold); margin-bottom:4px; }
@@ -2450,6 +2454,7 @@
       <img class="raid-boss-img" id="raidBossImg" src="erebos_raid_visual.jpg" alt="堕天使-エレボス">
       <div class="raid-boss-name">堕天使-エレボス</div>
       <div class="hpbar-wrap raid-boss-hp"><div class="hpbar" id="raidBossHpBar"></div><div class="hptext" id="raidBossHpText"></div></div>
+      <div class="raid-boss-ult-row"><span class="rbu-label">必殺</span><div class="ult-gauge-wrap rbu-gauge"><div class="ult-gauge" id="raidBossUltGauge"></div></div></div>
     </div>
     <div class="raid-ult-warning" id="raidUltWarning">⚠️ 次のターン、エレボスが必殺技を放つ！</div>
     <div class="raid-ult-overlay" id="raidUltOverlay">
@@ -2459,6 +2464,7 @@
       <div class="raid-ally-card">
         <div class="raid-ally-label">あなた</div>
         <div class="hpbar-wrap"><div class="hpbar" id="raidMyHpBar"></div><div class="hptext" id="raidMyHpText"></div></div>
+        <div class="ult-gauge-wrap"><div class="ult-gauge" id="raidMyUltGauge"></div></div>
       </div>
       <div class="raid-ally-card">
         <div class="raid-ally-label" id="raidPartnerLabel">相棒</div>
@@ -2479,6 +2485,7 @@
     <div class="raid-log" id="raidLog">エレボスの気配を感じる…</div>
     <div class="party-bar" id="raidPartyBar"></div>
     <div class="raid-timer" id="raidTimer">10</div>
+    <button class="ult-btn hidden" id="raidUltBtn">💥 必殺技発動</button>
     <div class="raid-hand-row">
       <button class="hand-btn" data-hand="rock"><span>✊</span><span class="htag">グー</span></button>
       <button class="hand-btn" data-hand="scissors"><span>✌️</span><span class="htag">チョキ</span></button>
@@ -3631,6 +3638,7 @@ const RaidNet = (function(){
           });
         }, 500);
       },
+      useUlt(){ /* mock: no boss server to apply to */ },
       reportEnd(){ /* mock: nothing to tell */ },
       leave(){ clearAll(); },
     };
@@ -3648,12 +3656,14 @@ const RaidNet = (function(){
     socket.on('raid_turn_result', handlers.onTurnResult);
     socket.on('raid_opponent_swap', handlers.onOpponentSwap);
     socket.on('raid_opponent_left', handlers.onOpponentLeft);
+    socket.on('raid_ult_used', handlers.onUltUsed);
     return {
       quickMatch(difficulty){ socket.emit('quick_match_raid', {name:playerName, difficulty}); },
       cancelQuick(){ socket.emit('cancel_quick_match_raid'); },
       submitDeck(deck){ socket.emit('submit_raid_deck', {deck}); },
       submitSwap(index){ socket.emit('submit_raid_swap', {index}); },
       submitHand(hand){ socket.emit('submit_raid_hand', {hand}); },
+      useUlt(damage, moveName){ socket.emit('use_raid_ult', {damage, moveName}); },
       reportEnd(){ socket.emit('report_raid_end'); },
       leave(){ socket.emit('leave_raid_room'); socket.disconnect(); },
     };
@@ -3680,6 +3690,7 @@ let raidActiveIdx = 0;
 let raidOpponentActiveIdx = 0;
 let raidTurnTimer = null;
 let raidHandLocked = false;
+let raidBossCurHp = 0;   // 必殺技ダメージ計算(現HP割合系)用にクライアント側でも追跡
 
 const RAID_DIFF_LABEL = { easy:'初級', medium:'中級', hard:'上級' };
 // reward table per difficulty — coins are granted immediately, card drop is a
@@ -3707,7 +3718,7 @@ function buildRaidDeck(){
   return selectedDeck.map(id=>{
     const c = CARDS[id];
     const st = getCardStats(id);
-    return { id, hp: st.hp, maxHp: st.hp, atk: st.atk, winBonus: c.winBonus, hand: c.hand };
+    return { id, hp: st.hp, maxHp: st.hp, atk: st.atk, winBonus: c.winBonus, hand: c.hand, ultGauge: 0 };
   });
 }
 
@@ -3734,8 +3745,10 @@ const raidNetHandlers = {
   },
   onBattleStart(d){
     raidDeck = d.yourDeck;
+    raidDeck.forEach(c=>{ if(c.ultGauge==null) c.ultGauge = 0; });
     raidActiveIdx = 0;
     raidOpponentActiveIdx = 0;
+    raidBossCurHp = d.boss.hp;
     document.getElementById('raidPartnerLabel').textContent = d.opponentName || raidPartnerName;
     updateRaidHpBars({
       bossHp:d.boss.hp, bossMaxHp:d.boss.maxHp,
@@ -3746,12 +3759,28 @@ const raidNetHandlers = {
     document.getElementById('raidBossImg').src = 'erebos_raid_visual.jpg';
     document.getElementById('raidRevealRow').classList.remove('show');
     document.getElementById('raidUltWarning').classList.remove('show');
+    updateRaidBossUltGauge(0, false);
+    updateRaidUltUI();
     renderRaidPartyBar();
     go('raidBattle');
     raidStartTurnTimer();
   },
   onOpponentSwap(d){
     raidOpponentActiveIdx = d.index;
+  },
+  onUltUsed(d){
+    raidBossCurHp = d.bossHp;
+    updateRaidHpBars({ bossHp:d.bossHp, bossMaxHp:d.bossMaxHp });
+    const who = d.byYou ? 'あなた' : document.getElementById('raidPartnerLabel').textContent;
+    document.getElementById('raidLog').textContent = `💥 ${who}の必殺技「${d.moveName}」！ ボスに${d.damage}ダメージ！`;
+    playSE('rarityLSR');
+    if(d.bossDefeated){
+      clearRaidTurnTimer();
+      raidClearRevealTimer();
+      document.getElementById('raidUltWarning').classList.remove('show');
+      raidNet.reportEnd();
+      setTimeout(()=> showRaidResult(true), 900);
+    }
   },
   onTurnResult(d){
     // 両者が出を決めた瞬間に即結果を出さず、5秒の「ボスが手を出す」演出を挟んでから反映する
@@ -3815,6 +3844,13 @@ function raidRevealResult(d){
     else if(d.opponent.outcome==='lose') logParts.push(`${partnerLabel}が被弾`);
   }
 
+  // 必殺ゲージ加算(通常バトルと同じ: 勝ち+20/得意手勝ち+30/あいこ+15、SR/LSRのみ)
+  const activeCard = raidDeck[d.you.cardIdx];
+  if(CARDS[activeCard.id] && canUseUltimate(CARDS[activeCard.id]) && activeCard.hp > 0){
+    if(d.you.outcome==='win') activeCard.ultGauge = Math.min(100, (activeCard.ultGauge||0) + (d.you.hand===activeCard.hand ? 30 : 20));
+    else if(d.you.outcome==='draw') activeCard.ultGauge = Math.min(100, (activeCard.ultGauge||0) + 15);
+  }
+
   const continueTurn = ()=>{
     if(d.ultimate){
       logParts.push('💥 エレボスの必殺技「堕天の福音」！ 全員に大ダメージ');
@@ -3827,12 +3863,14 @@ function raidRevealResult(d){
     if(d.opponentAutoSwap!=null) raidOpponentActiveIdx = d.opponentAutoSwap;
 
     document.getElementById('raidLog').textContent = logParts.join(' / ');
+    raidBossCurHp = d.bossHp;
     updateRaidHpBars({
       bossHp:d.bossHp, bossMaxHp:d.bossMaxHp,
       myHp:raidDeck[raidActiveIdx].hp, myMaxHp:raidDeck[raidActiveIdx].maxHp,
       partnerHp: d.opponent ? d.opponent.hpAfter : null,
     });
     renderRaidPartyBar();
+    updateRaidUltUI();
 
     const ultWarnEl = document.getElementById('raidUltWarning');
     if(d.bossDefeated || (d.playersDown && d.playersDown.length>0)){
@@ -3843,7 +3881,9 @@ function raidRevealResult(d){
     }
     // 次のターンが必殺技ターンならここで予告を出す
     ultWarnEl.classList.toggle('show', !!d.nextTurnIsUlt);
-    document.getElementById('raidRevealRow').classList.remove('show');
+    // ボスの必殺ゲージ(5ターン周期): 直前のターン数から現在の溜まり具合を表示
+    updateRaidBossUltGauge((d.turnCount % 5) / 5 * 100, !!d.nextTurnIsUlt);
+    // 公開した手は次の手を選んでいる間も表示したままにする(消すのは次の結果が来た時)
     raidStartTurnTimer();
   };
 
@@ -3881,6 +3921,7 @@ function tryRaidSwitch(i){
   raidNet.submitSwap(i);
   renderRaidPartyBar();
   updateRaidHpBars({ myHp: raidDeck[i].hp, myMaxHp: raidDeck[i].maxHp });
+  updateRaidUltUI();
   document.getElementById('raidLog').textContent = `${CARDS[raidDeck[i].id].name} に交代！`;
 }
 
@@ -3922,6 +3963,48 @@ function raidStartTurnTimer(){
   }, 1000);
 }
 function clearRaidTurnTimer(){ clearInterval(raidTurnTimer); raidTurnTimer=null; }
+
+// 自分の必殺ゲージUI(SR/LSRのみ表示、100%でボタン出現)
+function updateRaidUltUI(){
+  const bar = document.getElementById('raidMyUltGauge');
+  const btn = document.getElementById('raidUltBtn');
+  if(!bar || !btn || !raidDeck) return;
+  const card = raidDeck[raidActiveIdx];
+  const usable = CARDS[card.id] && canUseUltimate(CARDS[card.id]) && card.hp > 0;
+  const gauge = usable ? (card.ultGauge || 0) : 0;
+  bar.style.width = gauge + '%';
+  bar.classList.toggle('ready', gauge >= 100);
+  btn.classList.toggle('hidden', !usable || gauge < 100);
+}
+
+// ボスの必殺ゲージ(5ターン周期の溜まり具合)。ready=次ターン発動
+function updateRaidBossUltGauge(pct, ready){
+  const bar = document.getElementById('raidBossUltGauge');
+  if(!bar) return;
+  bar.style.width = (ready ? 100 : pct) + '%';
+  bar.classList.toggle('ready', !!ready);
+}
+
+document.getElementById('raidUltBtn').addEventListener('click', ()=>{
+  if(!raidDeck || !raidNet) return;
+  const card = raidDeck[raidActiveIdx];
+  if(!CARDS[card.id] || !canUseUltimate(CARDS[card.id])) return;
+  if((card.ultGauge||0) < 100 || card.hp <= 0) return;
+  card.ultGauge = 0;
+  updateRaidUltUI();
+  playSE('tap');
+  // 通常バトルと同じ必殺技効果計算を流用(ボスを擬似的な相手として渡す)
+  const pseudoMon = { ...CARDS[card.id], atk: card.atk, curHp: card.hp, maxHp: card.maxHp };
+  const eff = getUltimateEffect(pseudoMon, { curHp: raidBossCurHp });
+  const send = ()=> raidNet.useUlt(eff.damage, eff.moveName);
+  const clip = ULT_VIDEO_MAP[card.id];
+  if(clip){
+    playSE('rarityLSR');
+    playUltimateVideo(clip, send, 'raidUltOverlay', 'raidUltVideo');
+  } else {
+    send();
+  }
+});
 
 function submitRaidHand(hand){
   if(raidHandLocked) return;

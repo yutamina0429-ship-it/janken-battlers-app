@@ -3,7 +3,7 @@
 // IMPORTANT: bump CACHE_NAME every time you re-deploy a new build.
 // This mainly matters for the offline fallback cache now (see below) — the
 // network-first fetch strategy no longer depends on it for freshness.
-const CACHE_NAME = 'janken-battlers-v28';
+const CACHE_NAME = 'janken-battlers-v29';
 
 const CORE_ASSETS = [
   './',
