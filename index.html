@@ -1401,6 +1401,13 @@
   .fav-star.active{ background:rgba(0,0,0,0.55); color:#ffd54a; }
   .mini-card .fav-star{ top:6px; left:6px; }
   .col-tile .fav-star{ top:3px; right:3px; width:16px; height:16px; font-size:10px; }
+  .col-lb-max{
+    position:absolute; z-index:4; top:3px; left:3px;
+    background:linear-gradient(135deg,#ffe9a8,#e6a94a);
+    color:#3a1f00; font-weight:900; font-size:8px; letter-spacing:.02em;
+    padding:2px 4px; border-radius:5px; line-height:1;
+    box-shadow:0 1px 3px rgba(0,0,0,0.5);
+  }
   .lsr-tag-inline{
     margin-right:auto;
     font-family:"Cinzel", serif; font-weight:800; font-size:7.5px; letter-spacing:.04em;
@@ -3219,8 +3226,10 @@ function updateStaminaDisplay(){
 
 function getCardLevel(id){ return cardLevels[id] || 1; }
 function getCardLB(id){ return cardLB[id] || 0; }
-// growth: +6% of base per level, +5% of base per limit break (additive, no cap)
-function statMult(id){ return 1 + 0.06*(getCardLevel(id)-1) + 0.05*getCardLB(id); }
+// growth: +6% of base per level (uncapped), +10% of base per limit break (capped at LB_MAX=99, i.e. +990%)
+const LB_PERCENT = 0.10; // 限界突破1回あたりの永続強化率
+const LB_MAX = 99;       // 限界突破の最大回数(=永続+990%まで)
+function statMult(id){ return 1 + 0.06*(getCardLevel(id)-1) + LB_PERCENT*getCardLB(id); }
 function getCardStats(id){
   const base = CARDS[id];
   const m = statMult(id);
@@ -7249,7 +7258,7 @@ function renderEnhanceModal(){
   const lb = getCardLB(id);
   const cur = getCardStats(id);
   // preview of the stats one level from now (same formula, lv+1)
-  const nextMult = 1 + 0.06*lv + 0.05*lb;
+  const nextMult = 1 + 0.06*lv + LB_PERCENT*lb;
   const nextHp = Math.round(c.hp*nextMult);
   const nextAtk = Math.round(c.atk*nextMult);
   const cost = enhanceCost(lv);
@@ -7267,12 +7276,13 @@ function renderEnhanceModal(){
   btn.style.opacity = playerCoins < cost ? '0.45' : '1';
 
   const dupes = Math.max(0, (ownedCards[id]||0) - 1);
+  const lbMaxed = lb >= LB_MAX;
   document.getElementById('enhLbInfo').textContent =
-    `限界突破 +${lb}（永続 +${lb*5}%） ／ 被り所持 ${dupes}枚`;
+    `限界突破 +${lb}/${LB_MAX}（永続 +${Math.round(lb*LB_PERCENT*100)}%） ／ 被り所持 ${dupes}枚`;
   const lbBtn = document.getElementById('enhLbBtn');
-  lbBtn.textContent = '限界突破（被り1枚消費 → 永続+5%）';
-  lbBtn.disabled = dupes < 1;
-  lbBtn.style.opacity = dupes < 1 ? '0.45' : '1';
+  lbBtn.textContent = lbMaxed ? '限界突破（MAX）' : `限界突破（被り1枚消費 → 永続+${Math.round(LB_PERCENT*100)}%）`;
+  lbBtn.disabled = dupes < 1 || lbMaxed;
+  lbBtn.style.opacity = (dupes < 1 || lbMaxed) ? '0.45' : '1';
 }
 
 document.getElementById('enhLevelBtn').addEventListener('click', ()=>{
@@ -7289,11 +7299,13 @@ document.getElementById('enhLevelBtn').addEventListener('click', ()=>{
 document.getElementById('enhLbBtn').addEventListener('click', ()=>{
   const id = enhanceTargetId; if(!id) return;
   if((ownedCards[id]||0) < 2){ toastMessage('被りカードがありません'); return; }
+  if(getCardLB(id) >= LB_MAX){ toastMessage('限界突破は既にMAXです'); return; }
   ownedCards[id] -= 1;
   cardLB[id] = getCardLB(id) + 1;
   saveState();
   renderEnhanceModal();
-  toastMessage('限界突破！ 永続 +5%');
+  if(typeof buildCollectionScreen === 'function') buildCollectionScreen();
+  toastMessage(`限界突破！ 永続 +${Math.round(LB_PERCENT*100)}%`);
 });
 
 document.getElementById('enhViewBtn').addEventListener('click', ()=>{
@@ -7350,8 +7362,9 @@ function buildCollectionScreen(){
     tile.className = 'col-tile' + (owned ? '' : ' locked');
     const rarityLabel = c.rarity==='mgr' ? 'MGR' : c.rarity==='lsr' ? 'LSR' : c.rarity==='sr' ? 'SR' : c.rarity==='r' ? 'R' : 'N';
     const favStar = owned ? `<button class="fav-star${favoriteCards[id] ? ' active' : ''}" aria-label="お気に入り">${favoriteCards[id] ? '★' : '☆'}</button>` : '';
+    const lbMaxBadge = (owned && getCardLB(id) >= LB_MAX) ? `<div class="col-lb-max">MAX</div>` : '';
     tile.innerHTML = owned
-      ? `<img src="${c.img}" alt="">${favStar}<div class="col-rarity">${rarityLabel}</div><div class="col-name">${c.name} Lv.${getCardLevel(id)}${ownedCards[id]>1 ? ' ×'+ownedCards[id] : ''}</div>`
+      ? `<img src="${c.img}" alt="">${favStar}${lbMaxBadge}<div class="col-rarity">${rarityLabel}</div><div class="col-name">${c.name} Lv.${getCardLevel(id)}${ownedCards[id]>1 ? ' ×'+ownedCards[id] : ''}</div>`
       : `<img src="${c.img}" alt=""><div class="col-lock">🔒</div><div class="col-name">？？？</div>`;
     if(owned){
       const favBtn = tile.querySelector('.fav-star');
