@@ -761,6 +761,26 @@
   .raid-timer.urgent{ color:#ff6a6a; border-color:#ff6a6a; }
   .raid-hand-row{ display:flex; gap:10px; justify-content:center; margin-top:auto; padding-bottom:10px; }
 
+  .raid-ult-warning{
+    display:none; text-align:center; font-family:"Shippori Mincho",serif; font-weight:800; font-size:12px;
+    color:#ffd27a; background:linear-gradient(90deg, rgba(138,31,45,0.55), rgba(201,138,46,0.55));
+    border:1px solid rgba(255,210,120,0.6); border-radius:8px; padding:6px 10px;
+  }
+  .raid-ult-warning.show{
+    display:block; animation:raidUltWarnFlash 0.9s ease-in-out infinite;
+  }
+  @keyframes raidUltWarnFlash{
+    0%,100%{ opacity:.55; }
+    50%{ opacity:1; }
+  }
+  .raid-reveal-row{
+    display:flex; align-items:center; justify-content:center; gap:18px;
+    min-height:60px; opacity:0; pointer-events:none; transition:opacity .2s ease;
+  }
+  .raid-reveal-row.show{ opacity:1; }
+  .raid-reveal-slot{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+  .raid-reveal-slot .rr-label{ font-size:10px; color:var(--gold); }
+
   .ol-hero-ic{font-size:46px; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.5));}
   .raid-select-visual-wrap{ position:relative; text-align:center; margin-bottom:4px; }
   .raid-select-boss-img{
@@ -2431,6 +2451,7 @@
       <div class="raid-boss-name">堕天使-エレボス</div>
       <div class="hpbar-wrap raid-boss-hp"><div class="hpbar" id="raidBossHpBar"></div><div class="hptext" id="raidBossHpText"></div></div>
     </div>
+    <div class="raid-ult-warning" id="raidUltWarning">⚠️ 次のターン、エレボスが必殺技を放つ！</div>
     <div class="raid-ult-overlay" id="raidUltOverlay">
       <video id="raidUltVideo" playsinline muted></video>
     </div>
@@ -2442,6 +2463,17 @@
       <div class="raid-ally-card">
         <div class="raid-ally-label" id="raidPartnerLabel">相棒</div>
         <div class="hpbar-wrap"><div class="hpbar" id="raidPartnerHpBar"></div><div class="hptext" id="raidPartnerHpText"></div></div>
+      </div>
+    </div>
+    <div class="raid-reveal-row" id="raidRevealRow">
+      <div class="raid-reveal-slot">
+        <div class="reveal-hand" id="raidMyReveal"></div>
+        <span class="rr-label">あなた</span>
+      </div>
+      <div class="vs-mark">VS</div>
+      <div class="raid-reveal-slot">
+        <div class="reveal-hand" id="raidBossReveal"></div>
+        <span class="rr-label">エレボス</span>
       </div>
     </div>
     <div class="raid-log" id="raidLog">エレボスの気配を感じる…</div>
@@ -3712,6 +3744,8 @@ const raidNetHandlers = {
     });
     document.getElementById('raidLog').textContent = `${RAID_DIFF_LABEL[raidDifficulty]}のエレボスが目を覚ました…`;
     document.getElementById('raidBossImg').src = 'erebos_raid_visual.jpg';
+    document.getElementById('raidRevealRow').classList.remove('show');
+    document.getElementById('raidUltWarning').classList.remove('show');
     renderRaidPartyBar();
     go('raidBattle');
     raidStartTurnTimer();
@@ -3720,56 +3754,14 @@ const raidNetHandlers = {
     raidOpponentActiveIdx = d.index;
   },
   onTurnResult(d){
+    // 両者が出を決めた瞬間に即結果を出さず、5秒の「ボスが手を出す」演出を挟んでから反映する
     clearRaidTurnTimer();
-    raidHandLocked = false;
-    raidDeck[d.you.cardIdx].hp = d.you.hpAfter;
-    const partnerLabel = document.getElementById('raidPartnerLabel').textContent;
-    const logParts = [];
-    if(d.you.outcome==='win') logParts.push(`あなたの勝ち！ボスに${d.you.bossDamage}ダメージ`);
-    else if(d.you.outcome==='lose') logParts.push(`あなたの負け…${d.you.playerDamage}ダメージ`);
-    else logParts.push('あなたはあいこ');
-    if(d.you.cardKO) logParts.push(`${CARDS[raidDeck[d.you.cardIdx].id].name}は倒れた…`);
-    if(d.opponent){
-      if(d.opponent.outcome==='win') logParts.push(`${partnerLabel}の勝ち！`);
-      else if(d.opponent.outcome==='lose') logParts.push(`${partnerLabel}が被弾`);
-    }
-
-    const continueTurn = ()=>{
-      if(d.ultimate){
-        logParts.push('💥 エレボスの必殺技「堕天の福音」！ 全員に大ダメージ');
-        if(d.ultimate.you) raidDeck[d.ultimate.you.cardIdx].hp = d.ultimate.you.hpAfter;
-      }
-      if(d.yourAutoSwap!=null){
-        raidActiveIdx = d.yourAutoSwap;
-        logParts.push(`${CARDS[raidDeck[raidActiveIdx].id].name}に交代！`);
-      }
-      if(d.opponentAutoSwap!=null) raidOpponentActiveIdx = d.opponentAutoSwap;
-
-      document.getElementById('raidLog').textContent = logParts.join(' / ');
-      updateRaidHpBars({
-        bossHp:d.bossHp, bossMaxHp:d.bossMaxHp,
-        myHp:raidDeck[raidActiveIdx].hp, myMaxHp:raidDeck[raidActiveIdx].maxHp,
-        partnerHp: d.opponent ? d.opponent.hpAfter : null,
-      });
-      renderRaidPartyBar();
-
-      if(d.bossDefeated || (d.playersDown && d.playersDown.length>0)){
-        raidNet.reportEnd();
-        setTimeout(()=> showRaidResult(d.bossDefeated && (!d.playersDown || d.playersDown.length===0)), 900);
-        return;
-      }
-      raidStartTurnTimer();
-    };
-
-    // the ultimate clip plays BEFORE the damage/log lands, same as the normal
-    // battle's ULT_VIDEO_MAP treatment — falls straight through to continueTurn
-    // if there's no video file yet (missing/still being generated).
-    if(d.ultimate){
-      playSE('rarityLSR');
-      playUltimateVideo('erebos_raid_ult.mp4', continueTurn, 'raidUltOverlay', 'raidUltVideo');
-    } else {
-      continueTurn();
-    }
+    raidHandLocked = true;
+    document.getElementById('raidLog').textContent = 'エレボスが手を選んでいる…';
+    document.getElementById('raidRevealRow').classList.remove('show');
+    document.getElementById('raidMyReveal').textContent = '';
+    document.getElementById('raidBossReveal').textContent = '';
+    raidRevealCountdown(d);
   },
   onOpponentLeft(){
     clearRaidTurnTimer();
@@ -3777,6 +3769,94 @@ const raidNetHandlers = {
     go('home');
   },
 };
+
+// 「相方がお互い出を決めても5秒経つまで結果を出さない」演出用カウントダウン。
+// #raidTimer を手選択タイマーと共用し、5→0でボスの手と結果を公開する。
+let raidRevealTimer = null;
+function raidClearRevealTimer(){ clearInterval(raidRevealTimer); raidRevealTimer=null; }
+function raidRevealCountdown(d){
+  raidClearRevealTimer();
+  const timerEl = document.getElementById('raidTimer');
+  let sec = 5;
+  timerEl.textContent = sec;
+  timerEl.classList.remove('urgent');
+  raidRevealTimer = setInterval(()=>{
+    sec--;
+    timerEl.textContent = Math.max(0, sec);
+    if(sec<=1) timerEl.classList.add('urgent');
+    if(sec<=0){
+      raidClearRevealTimer();
+      raidRevealResult(d);
+    }
+  }, 1000);
+}
+
+function raidRevealResult(d){
+  raidDeck[d.you.cardIdx].hp = d.you.hpAfter;
+  const partnerLabel = document.getElementById('raidPartnerLabel').textContent;
+
+  // ボスと自分の手を公開
+  const myReveal = document.getElementById('raidMyReveal');
+  const bossReveal = document.getElementById('raidBossReveal');
+  myReveal.textContent = HAND_EMOJI[d.you.hand];
+  bossReveal.textContent = HAND_EMOJI[d.bossHand];
+  myReveal.classList.remove('pop'); void myReveal.offsetWidth; myReveal.classList.add('pop');
+  bossReveal.classList.remove('pop'); void bossReveal.offsetWidth; bossReveal.classList.add('pop');
+  document.getElementById('raidRevealRow').classList.add('show');
+  playSE('tap');
+
+  const logParts = [];
+  if(d.you.outcome==='win') logParts.push(`あなたの勝ち！ボスに${d.you.bossDamage}ダメージ`);
+  else if(d.you.outcome==='lose') logParts.push(`あなたの負け…${d.you.playerDamage}ダメージ`);
+  else logParts.push('あなたはあいこ');
+  if(d.you.cardKO) logParts.push(`${CARDS[raidDeck[d.you.cardIdx].id].name}は倒れた…`);
+  if(d.opponent){
+    if(d.opponent.outcome==='win') logParts.push(`${partnerLabel}の勝ち！`);
+    else if(d.opponent.outcome==='lose') logParts.push(`${partnerLabel}が被弾`);
+  }
+
+  const continueTurn = ()=>{
+    if(d.ultimate){
+      logParts.push('💥 エレボスの必殺技「堕天の福音」！ 全員に大ダメージ');
+      if(d.ultimate.you) raidDeck[d.ultimate.you.cardIdx].hp = d.ultimate.you.hpAfter;
+    }
+    if(d.yourAutoSwap!=null){
+      raidActiveIdx = d.yourAutoSwap;
+      logParts.push(`${CARDS[raidDeck[raidActiveIdx].id].name}に交代！`);
+    }
+    if(d.opponentAutoSwap!=null) raidOpponentActiveIdx = d.opponentAutoSwap;
+
+    document.getElementById('raidLog').textContent = logParts.join(' / ');
+    updateRaidHpBars({
+      bossHp:d.bossHp, bossMaxHp:d.bossMaxHp,
+      myHp:raidDeck[raidActiveIdx].hp, myMaxHp:raidDeck[raidActiveIdx].maxHp,
+      partnerHp: d.opponent ? d.opponent.hpAfter : null,
+    });
+    renderRaidPartyBar();
+
+    const ultWarnEl = document.getElementById('raidUltWarning');
+    if(d.bossDefeated || (d.playersDown && d.playersDown.length>0)){
+      ultWarnEl.classList.remove('show');
+      raidNet.reportEnd();
+      setTimeout(()=> showRaidResult(d.bossDefeated && (!d.playersDown || d.playersDown.length===0)), 900);
+      return;
+    }
+    // 次のターンが必殺技ターンならここで予告を出す
+    ultWarnEl.classList.toggle('show', !!d.nextTurnIsUlt);
+    document.getElementById('raidRevealRow').classList.remove('show');
+    raidStartTurnTimer();
+  };
+
+  // the ultimate clip plays BEFORE the damage/log lands, same as the normal
+  // battle's ULT_VIDEO_MAP treatment — falls straight through to continueTurn
+  // if there's no video file yet (missing/still being generated).
+  if(d.ultimate){
+    playSE('rarityLSR');
+    playUltimateVideo('erebos_raid_ult.mp4', continueTurn, 'raidUltOverlay', 'raidUltVideo');
+  } else {
+    continueTurn();
+  }
+}
 
 function renderRaidPartyBar(){
   const bar = document.getElementById('raidPartyBar');
