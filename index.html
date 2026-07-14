@@ -823,9 +823,9 @@
   .pack-select-chip.locked{ opacity:0.4; filter:grayscale(0.5); }
 
   /* gacha: pack packaging visual */
-  .pack-visual-wrap{ text-align:center; margin:2px 0 8px; }
+  .pack-visual-wrap{ text-align:center; margin:6px 0 10px; }
   .pack-visual-img{
-    width:auto; height:210px; max-width:82%; object-fit:contain;
+    width:auto; height:300px; max-width:82%; object-fit:contain;
     border-radius:14px;
     filter:drop-shadow(0 8px 20px rgba(0,0,0,0.55)) drop-shadow(0 0 18px rgba(212,168,71,0.35));
   }
@@ -2373,9 +2373,9 @@
       <div class="hero" id="heroBanner">
         <div class="hero-foil"></div>
         <div class="hero-copy">
-          <span class="hero-badge">LSR PICKUP</span>
-          <div class="hero-title">天倪神<br>アイテール</div>
-          <div class="hero-desc">天より降りし裁定者。<br>ピックアップ開催中</div>
+          <span class="hero-badge">NEW PACK</span>
+          <div class="hero-title">超激覚醒<br>パック</div>
+          <div class="hero-desc">天より降りし裁定者。<br>開催中！タップでガチャへ</div>
         </div>
         <div class="hero-img"><img src="misc_home_hero_aither.webp" alt=""></div>
       </div>
@@ -2849,19 +2849,10 @@
   <section class="screen" id="gachaHome">
     <button class="arcade-back" id="gachaBack">‹ ホームへ</button>
 
-    <div class="pack-select-row" id="packSelectRow"></div>
+    <div class="pack-select-row" id="packSelectRow" style="margin-top:52px;"></div>
 
     <div class="pack-visual-wrap">
       <img class="pack-visual-img" id="gachaPackImg" src="" alt="">
-    </div>
-
-    <div class="gacha-banner" id="gachaBanner">
-      <div class="gacha-banner-foil"></div>
-      <div class="season-tag" id="gachaSeasonTag" style="display:none;"></div>
-      <div class="gacha-banner-content">
-        <div class="gacha-title" id="gachaTitle">超激覚醒パック</div>
-        <div class="gacha-sub" id="gachaSub">全カードが対象の基本パック</div>
-      </div>
     </div>
 
     <div class="gacha-rates" id="gachaRates">
@@ -7506,27 +7497,6 @@ function renderGachaBanner(){
   const pack = PACK_TYPES[gachaSelectedPackId];
   const packImg = document.getElementById('gachaPackImg');
   if(packImg){ packImg.src = pack.img || ''; packImg.alt = pack.name; }
-  const banner = document.getElementById('gachaBanner');
-  const seasonTag = document.getElementById('gachaSeasonTag');
-  const title = document.getElementById('gachaTitle');
-  const sub = document.getElementById('gachaSub');
-  // シーズンイベントは「標準パック」の見た目だけを差し替える(中身のプールは変えない)
-  const season = (pack.id === 'standard' && CURRENT_SEASON) ? SEASONS[CURRENT_SEASON] : null;
-  if(season){
-    banner.classList.add('seasonal');
-    banner.style.setProperty('--season-light', season.colors.light);
-    banner.style.setProperty('--season-mid', season.colors.mid);
-    banner.style.setProperty('--season-deep', season.colors.deep);
-    seasonTag.style.display = '';
-    seasonTag.textContent = 'SEASON';
-    title.textContent = season.name;
-    sub.textContent = season.bannerCopy;
-  } else {
-    banner.classList.remove('seasonal');
-    seasonTag.style.display = 'none';
-    title.textContent = pack.name;
-    sub.textContent = pack.concept;
-  }
 
   const rates = pack.rates || GACHA_RATES;
   document.getElementById('rateN').textContent = Math.round(rates.n*100) + '%';
@@ -7680,6 +7650,11 @@ function startGachaReveal(results){
   const resultsPanel = document.getElementById('grResults');
   const resultsGrid = document.getElementById('grResultsGrid');
 
+  // 6枚を超える大量プル(=10パックまとめ開封)は、1枚ずつめくる演出だと
+  // 画面にカードが収まらず操作不能になるため、テレグラフ(レア度の予兆)だけ
+  // 見せてから結果一覧に直行する
+  const bulkMode = results.length > 6;
+
   resultsPanel.classList.add('hidden');
   resultsGrid.innerHTML = '';
   cardsWrap.innerHTML = '';
@@ -7829,6 +7804,19 @@ function startGachaReveal(results){
       againBtn.textContent = (lastPull.numPacks===1 ? `パック1つ（${pack.cardsPerPack}枚）をもう一度` : `パック10個（${pack.cardsPerPack*10}枚）をもう一度`) + `（🪙${lastPull.cost}）`;
     }
     resultsPanel.classList.remove('hidden');
+  }
+
+  if(bulkMode){
+    // カード裏面は並べない(50枚は物理的に収まらない)。
+    // レア度の予兆演出だけ流して、そのまま全カードの結果一覧へ。
+    skipBtn.classList.add('hidden');
+    telegraphTimer = setTimeout(fireTelegraph, 750);
+    autoTimer = setTimeout(()=>{
+      circle.style.display = 'none';
+      circle.classList.remove('tier-r','tier-sr','tier-lsr');
+      showResultsSummary();
+    }, bestTier==='n' ? 1400 : flipDelay);
+    return;
   }
 
   buildCardBacks();
