@@ -538,7 +538,10 @@
     border:2px solid rgba(230,200,120,0.4);
     box-shadow:0 8px 22px rgba(0,0,0,0.45);
     background:linear-gradient(135deg,#3a2456,#173e59);
+    cursor:pointer;
+    transition:transform .12s ease;
   }
+  .hero:active{ transform:scale(0.98); }
   .hero-foil{
     position:absolute; inset:0;
     background:repeating-linear-gradient(115deg,
@@ -2282,7 +2285,7 @@
 
     <div class="home-scroll">
       <!-- hero banner -->
-      <div class="hero">
+      <div class="hero" id="heroBanner">
         <div class="hero-foil"></div>
         <div class="hero-copy">
           <span class="hero-badge">LSR PICKUP</span>
@@ -7574,6 +7577,10 @@ function startGachaReveal(results){
 }
 
 document.getElementById('grDone').addEventListener('click', ()=> openGachaHome());
+document.getElementById('heroBanner').addEventListener('click', ()=>{
+  playSE('tap');
+  openGachaHome();
+});
 document.getElementById('grAgain').addEventListener('click', ()=>{
   if(lastPull) tryPullGacha(lastPull.count, lastPull.cost);
 });
