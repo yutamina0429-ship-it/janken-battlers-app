@@ -805,6 +805,91 @@
   }
   .raid-boss-row:active{ transform:scale(0.98); }
   .raid-boss-row.locked{ opacity:0.45; filter:grayscale(0.6); cursor:default; }
+
+  /* gacha: pack selector row (今は1種類でも、増えた時に横スクロールで並ぶ) */
+  .pack-select-row{
+    display:flex; gap:9px; overflow-x:auto; padding:2px 2px 6px; margin-bottom:2px;
+  }
+  .pack-select-chip{
+    flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding:8px 14px; border-radius:13px; cursor:pointer;
+    background:rgba(0,0,0,0.3); border:1px solid rgba(230,200,120,0.25);
+    color:var(--gold); font-family:"Shippori Mincho",serif; font-size:11.5px; white-space:nowrap;
+  }
+  .pack-select-chip.active{
+    background:linear-gradient(160deg,var(--gold-bright),var(--bronze));
+    color:var(--ink); border-color:transparent; font-weight:700;
+  }
+  .pack-select-chip.locked{ opacity:0.4; filter:grayscale(0.5); }
+
+  /* gacha: pack packaging visual */
+  .pack-visual-wrap{ text-align:center; margin:2px 0 8px; }
+  .pack-visual-img{
+    width:auto; height:210px; max-width:82%; object-fit:contain;
+    border-radius:14px;
+    filter:drop-shadow(0 8px 20px rgba(0,0,0,0.55)) drop-shadow(0 0 18px rgba(212,168,71,0.35));
+  }
+
+  /* gacha: pack-opening interaction (tear the top off by swiping) */
+  .pack-open-stage{
+    position:absolute; inset:0; z-index:30;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:18px;
+    background:radial-gradient(circle at 50% 42%, #2c2340 0%, #17121f 70%);
+  }
+  .pack-open-stage.hidden{ display:none; }
+  .pack-open-hint{
+    font-family:"Shippori Mincho",serif; font-size:13px; color:var(--gold-bright);
+    letter-spacing:.08em; animation:packHintPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes packHintPulse{ 0%,100%{opacity:0.55;} 50%{opacity:1;} }
+  .pack-open-count{ font-size:11.5px; color:var(--gold); opacity:0.8; }
+  .pack-open-wrap{
+    position:relative;
+    width:246px; height:437px;  /* 720x1280の約0.342倍 */
+    touch-action:none; /* スワイプをスクロールに取られない */
+  }
+  .pack-piece{
+    position:absolute; left:0; width:100%; height:100%;
+    background-image:var(--pack-img);
+    background-size:100% 100%;
+    filter:drop-shadow(0 10px 26px rgba(0,0,0,0.6));
+  }
+  /* 上部(切り離される側): パック画像の上18%だけを表示 */
+  .pack-piece-top{
+    top:0; clip-path:inset(0 0 82% 0);
+    z-index:2;
+  }
+  /* 本体(残る側): 下82%を表示 */
+  .pack-piece-body{
+    top:0; clip-path:inset(18% 0 0 0);
+    z-index:1;
+  }
+  .pack-tear-line{
+    position:absolute; top:18%; left:0; height:3px; width:0%;
+    background:linear-gradient(90deg, #fff, var(--gold-bright));
+    box-shadow:0 0 12px 3px rgba(255,240,190,0.9);
+    z-index:3;
+  }
+  .pack-tear-flash{
+    position:absolute; inset:-30%;
+    background:radial-gradient(circle, rgba(255,250,230,0.95) 0%, rgba(255,250,230,0) 60%);
+    opacity:0; z-index:4; pointer-events:none;
+  }
+  .pack-tear-flash.go{ animation:packFlash .5s ease-out forwards; }
+  @keyframes packFlash{ 0%{opacity:0;} 25%{opacity:1;} 100%{opacity:0;} }
+  .pack-piece-top.torn{
+    animation:packTopFly .65s cubic-bezier(.3,.6,.4,1) forwards;
+  }
+  @keyframes packTopFly{
+    to{ transform:translate(130px,-190px) rotate(24deg); opacity:0; }
+  }
+  .pack-piece-body.opened{
+    animation:packBodyDrop .55s ease-in .18s forwards;
+  }
+  @keyframes packBodyDrop{
+    to{ transform:translateY(500px) rotate(-5deg); opacity:0; }
+  }
   .raid-boss-portrait{
     flex-shrink:0; width:46px; height:46px; border-radius:9px; object-fit:cover;
     border:1px solid rgba(230,200,120,0.35);
@@ -2763,20 +2848,27 @@
   <!-- ============ GACHA: HOME ============ -->
   <section class="screen" id="gachaHome">
     <button class="arcade-back" id="gachaBack">‹ ホームへ</button>
+
+    <div class="pack-select-row" id="packSelectRow"></div>
+
+    <div class="pack-visual-wrap">
+      <img class="pack-visual-img" id="gachaPackImg" src="" alt="">
+    </div>
+
     <div class="gacha-banner" id="gachaBanner">
       <div class="gacha-banner-foil"></div>
       <div class="season-tag" id="gachaSeasonTag" style="display:none;"></div>
       <div class="gacha-banner-content">
-        <div class="gacha-title" id="gachaTitle">超激覚醒ガチャ</div>
-        <div class="gacha-sub" id="gachaSub">LSR 出現率アップ中！</div>
+        <div class="gacha-title" id="gachaTitle">超激覚醒パック</div>
+        <div class="gacha-sub" id="gachaSub">全カードが対象の基本パック</div>
       </div>
     </div>
 
-    <div class="gacha-rates">
-      <div class="rate-row"><span class="rate-tag n">N</span><span class="rate-pct">55%</span></div>
-      <div class="rate-row"><span class="rate-tag r">R</span><span class="rate-pct">25%</span></div>
-      <div class="rate-row"><span class="rate-tag sr">SR</span><span class="rate-pct">8%</span></div>
-      <div class="rate-row"><span class="rate-tag lsr">LSR</span><span class="rate-pct">12%</span></div>
+    <div class="gacha-rates" id="gachaRates">
+      <div class="rate-row"><span class="rate-tag n">N</span><span class="rate-pct" id="rateN">55%</span></div>
+      <div class="rate-row"><span class="rate-tag r">R</span><span class="rate-pct" id="rateR">30%</span></div>
+      <div class="rate-row"><span class="rate-tag sr">SR</span><span class="rate-pct" id="rateSR">12%</span></div>
+      <div class="rate-row"><span class="rate-tag lsr">LSR</span><span class="rate-pct" id="rateLSR">3%</span></div>
     </div>
 
     <div class="gacha-coin-row">
@@ -2785,12 +2877,12 @@
 
     <div class="gacha-buttons">
       <button class="gacha-btn" id="gachaSingle">
-        <div class="gb-label">1回引く</div>
-        <div class="gb-cost">🪙 100</div>
+        <div class="gb-label">パック1つ（5枚）</div>
+        <div class="gb-cost">🪙 500</div>
       </button>
       <button class="gacha-btn primary" id="gachaTen">
-        <div class="gb-label">10連引く</div>
-        <div class="gb-cost">🪙 900</div>
+        <div class="gb-label">パック10個（50枚）</div>
+        <div class="gb-cost">🪙 5000</div>
       </button>
     </div>
     <p class="gacha-note">※デモ版のため排出率は調整中の仮の数値です</p>
@@ -2798,6 +2890,16 @@
 
   <!-- ============ GACHA: REVEAL ============ -->
   <section class="screen" id="gachaReveal">
+    <div class="pack-open-stage hidden" id="packOpenStage">
+      <p class="pack-open-hint" id="packOpenHint">パックの上を横にスワイプして開封！</p>
+      <div class="pack-open-wrap" id="packOpenWrap">
+        <div class="pack-piece pack-piece-top" id="packPieceTop"></div>
+        <div class="pack-piece pack-piece-body" id="packPieceBody"></div>
+        <div class="pack-tear-line" id="packTearLine"></div>
+        <div class="pack-tear-flash" id="packTearFlash"></div>
+      </div>
+      <p class="pack-open-count" id="packOpenCount"></p>
+    </div>
     <div class="gr-stage" id="grStage">
       <div class="gr-circle" id="grCircle"></div>
       <div class="gr-burst" id="grBurst"></div>
@@ -7338,27 +7440,78 @@ const GACHA_POOL = {
                                                   // comes back, it'll need a disclosed rate in the rate table.)
 };
 const GACHA_RATES = { lsr:0.03, sr:0.12, r:0.30, n:0.55 };
-const GACHA_COST_SINGLE = 100;
-const GACHA_COST_TEN = 900;
 
-function rollGachaOnce(){
+// パックの種類。新しいパックはここに1エントリ足すだけでOK。
+// rates/pool を null にすると、通常のGACHA_RATES/GACHA_POOL(全カード)がそのまま使われる。
+// 属性限定パックなどを作る時は pool に {n:[...],r:[...],sr:[...],lsr:[...]} を渡す。
+const PACK_TYPES = {
+  standard: {
+    id: 'standard',
+    name: '超激覚醒パック',
+    concept: '全カードが対象の基本パック',
+    img: 'pack_standard.webp',
+    cardsPerPack: 5,
+    pricePerPack: 500,
+    rates: null,
+    pool: null,
+    locked: false,
+  },
+  // 例: 今後こんな感じで追加できる(locked:trueなら選択肢には出るが開けない「近日実装」表示)
+  // fire: { id:'fire', name:'紅蓮パック', concept:'炎属性カードのみ排出',
+  //   cardsPerPack:5, pricePerPack:500, rates:null,
+  //   pool:{ n:['paa',...], r:['ignis',...], sr:['homurabi',...], lsr:[] },
+  //   locked:true },
+};
+let gachaSelectedPackId = 'standard';
+
+function rollGachaOnce(rates, poolOverride){
+  const rt = rates || GACHA_RATES;
   const r = Math.random();
   let tier, pool;
-  if(r < GACHA_RATES.lsr){ tier='lsr'; pool=GACHA_POOL.lsr; }
-  else if(r < GACHA_RATES.lsr + GACHA_RATES.sr){ tier='sr'; pool=GACHA_POOL.sr; }
-  else if(r < GACHA_RATES.lsr + GACHA_RATES.sr + GACHA_RATES.r){ tier='r'; pool=GACHA_POOL.r; }
-  else { tier='n'; pool=GACHA_POOL.n; }
+  if(r < rt.lsr){ tier='lsr'; pool=(poolOverride && poolOverride.lsr) || GACHA_POOL.lsr; }
+  else if(r < rt.lsr + rt.sr){ tier='sr'; pool=(poolOverride && poolOverride.sr) || GACHA_POOL.sr; }
+  else if(r < rt.lsr + rt.sr + rt.r){ tier='r'; pool=(poolOverride && poolOverride.r) || GACHA_POOL.r; }
+  else { tier='n'; pool=(poolOverride && poolOverride.n) || GACHA_POOL.n; }
   const id = pool[Math.floor(Math.random()*pool.length)];
   return { id, tier };
 }
 
-function openGachaHome(){
-  updateCoinDisplay();
+function renderPackSelectRow(){
+  const row = document.getElementById('packSelectRow');
+  if(!row) return;
+  row.innerHTML = '';
+  Object.values(PACK_TYPES).forEach(pack=>{
+    const chip = document.createElement('div');
+    chip.className = 'pack-select-chip' + (pack.id===gachaSelectedPackId ? ' active' : '') + (pack.locked ? ' locked' : '');
+    chip.textContent = pack.locked ? '？？？' : pack.name;
+    if(!pack.locked){
+      chip.addEventListener('click', ()=> selectPack(pack.id));
+    } else {
+      chip.addEventListener('click', ()=> toastMessage('近日実装予定です'));
+    }
+    row.appendChild(chip);
+  });
+}
+
+function selectPack(packId){
+  const pack = PACK_TYPES[packId];
+  if(!pack || pack.locked) return;
+  gachaSelectedPackId = packId;
+  playSE('tap');
+  renderPackSelectRow();
+  renderGachaBanner();
+}
+
+function renderGachaBanner(){
+  const pack = PACK_TYPES[gachaSelectedPackId];
+  const packImg = document.getElementById('gachaPackImg');
+  if(packImg){ packImg.src = pack.img || ''; packImg.alt = pack.name; }
   const banner = document.getElementById('gachaBanner');
   const seasonTag = document.getElementById('gachaSeasonTag');
   const title = document.getElementById('gachaTitle');
   const sub = document.getElementById('gachaSub');
-  const season = CURRENT_SEASON ? SEASONS[CURRENT_SEASON] : null;
+  // シーズンイベントは「標準パック」の見た目だけを差し替える(中身のプールは変えない)
+  const season = (pack.id === 'standard' && CURRENT_SEASON) ? SEASONS[CURRENT_SEASON] : null;
   if(season){
     banner.classList.add('seasonal');
     banner.style.setProperty('--season-light', season.colors.light);
@@ -7371,18 +7524,38 @@ function openGachaHome(){
   } else {
     banner.classList.remove('seasonal');
     seasonTag.style.display = 'none';
-    title.textContent = '超激覚醒ガチャ';
-    sub.textContent = 'LSR 出現率アップ中！';
+    title.textContent = pack.name;
+    sub.textContent = pack.concept;
   }
+
+  const rates = pack.rates || GACHA_RATES;
+  document.getElementById('rateN').textContent = Math.round(rates.n*100) + '%';
+  document.getElementById('rateR').textContent = Math.round(rates.r*100) + '%';
+  document.getElementById('rateSR').textContent = Math.round(rates.sr*100) + '%';
+  document.getElementById('rateLSR').textContent = Math.round(rates.lsr*100) + '%';
+
+  document.querySelector('#gachaSingle .gb-label').textContent = `パック1つ（${pack.cardsPerPack}枚）`;
+  document.querySelector('#gachaSingle .gb-cost').textContent = `🪙 ${pack.pricePerPack}`;
+  document.querySelector('#gachaTen .gb-label').textContent = `パック10個（${pack.cardsPerPack*10}枚）`;
+  document.querySelector('#gachaTen .gb-cost').textContent = `🪙 ${pack.pricePerPack*10}`;
+}
+
+function openGachaHome(){
+  updateCoinDisplay();
+  renderPackSelectRow();
+  renderGachaBanner();
   go('gachaHome');
 }
 
 document.getElementById('gachaBack').addEventListener('click', ()=> goHomeReset());
-document.getElementById('gachaSingle').addEventListener('click', ()=> tryPullGacha(1, GACHA_COST_SINGLE));
-document.getElementById('gachaTen').addEventListener('click', ()=> tryPullGacha(10, GACHA_COST_TEN));
+document.getElementById('gachaSingle').addEventListener('click', ()=> tryPullGacha(1));
+document.getElementById('gachaTen').addEventListener('click', ()=> tryPullGacha(10));
 
 let lastPull = null; // remembered for the "もう一度引く" quick re-pull on the results screen
-function tryPullGacha(count, cost){
+function tryPullGacha(numPacks){
+  const pack = PACK_TYPES[gachaSelectedPackId];
+  const count = pack.cardsPerPack * numPacks;
+  const cost = pack.pricePerPack * numPacks;
   if(!DEMO_INFINITE_COINS && playerCoins < cost){
     toastMessage('コインが足りません');
     return;
@@ -7390,17 +7563,107 @@ function tryPullGacha(count, cost){
   playSE('gachaPull');
   if(!DEMO_INFINITE_COINS) playerCoins -= cost;
   updateCoinDisplay();
-  lastPull = { count, cost };
+  lastPull = { numPacks, cost, count, packId: pack.id };
   const results = [];
-  for(let i=0;i<count;i++) results.push(rollGachaOnce());
+  for(let i=0;i<count;i++) results.push(rollGachaOnce(pack.rates, pack.pool));
   // isNew must be checked before granting; within a multi-pull, only the FIRST
   // copy of a previously-unowned card counts as new (the loop grants as it goes)
   results.forEach(r=>{
     r.isNew = !ownedCards[r.id];
     grantCard(r.id);
   });
-  startGachaReveal(results);
+  startPackOpen(results, numPacks, pack);
 }
+
+// ---- パック開封演出: スワイプで上部を切り裂いてから、既存のカードリビールへ ----
+let packOpenState = null;
+function startPackOpen(results, numPacks, pack){
+  go('gachaReveal');
+  const stage = document.getElementById('packOpenStage');
+  const wrap = document.getElementById('packOpenWrap');
+  const top = document.getElementById('packPieceTop');
+  const body = document.getElementById('packPieceBody');
+  const tearLine = document.getElementById('packTearLine');
+  const flash = document.getElementById('packTearFlash');
+  const hint = document.getElementById('packOpenHint');
+  const countLabel = document.getElementById('packOpenCount');
+
+  // 既存のリビール要素を一旦隠す(startGachaRevealが呼ばれた時に表に出る)
+  document.getElementById('grStage').style.visibility = 'hidden';
+  document.getElementById('grSkip').classList.add('hidden');
+  document.getElementById('grResults').classList.add('hidden');
+
+  wrap.style.setProperty('--pack-img', `url(${pack.img || 'pack_standard.webp'})`);
+  top.classList.remove('torn');
+  body.classList.remove('opened');
+  tearLine.style.width = '0%';
+  flash.classList.remove('go');
+  hint.style.display = '';
+  countLabel.textContent = numPacks > 1 ? `${numPacks}パックまとめて開封（${results.length}枚）` : '';
+  stage.classList.remove('hidden');
+
+  packOpenState = { results, torn:false, dragging:false, startX:0, progress:0 };
+}
+
+function packTear(){
+  if(!packOpenState || packOpenState.torn) return;
+  packOpenState.torn = true;
+  const stage = document.getElementById('packOpenStage');
+  const top = document.getElementById('packPieceTop');
+  const body = document.getElementById('packPieceBody');
+  const flash = document.getElementById('packTearFlash');
+  document.getElementById('packOpenHint').style.display = 'none';
+  playSE('gachaPull');
+  flash.classList.add('go');
+  top.classList.add('torn');
+  body.classList.add('opened');
+  const results = packOpenState.results;
+  setTimeout(()=>{
+    stage.classList.add('hidden');
+    document.getElementById('grStage').style.visibility = '';
+    startGachaReveal(results);
+  }, 850);
+}
+
+// スワイプ(タッチ/マウス両対応)。パック上部を横方向に一定距離なぞると開封
+(function setupPackTearGesture(){
+  const wrap = document.getElementById('packOpenWrap');
+  const tearLine = document.getElementById('packTearLine');
+  const TEAR_DISTANCE = 130; // px
+
+  function pointerX(e){ return (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX; }
+
+  function onStart(e){
+    if(!packOpenState || packOpenState.torn) return;
+    packOpenState.dragging = true;
+    packOpenState.startX = pointerX(e);
+    packOpenState.progress = 0;
+  }
+  function onMove(e){
+    if(!packOpenState || !packOpenState.dragging || packOpenState.torn) return;
+    const dx = Math.abs(pointerX(e) - packOpenState.startX);
+    packOpenState.progress = Math.min(1, dx / TEAR_DISTANCE);
+    tearLine.style.width = (packOpenState.progress * 100) + '%';
+    if(packOpenState.progress >= 1){
+      packOpenState.dragging = false;
+      packTear();
+    }
+    e.preventDefault();
+  }
+  function onEnd(){
+    if(!packOpenState || packOpenState.torn) return;
+    packOpenState.dragging = false;
+    // 途中でやめたら裂け目は戻る
+    tearLine.style.width = '0%';
+  }
+  wrap.addEventListener('touchstart', onStart, {passive:true});
+  wrap.addEventListener('touchmove', onMove, {passive:false});
+  wrap.addEventListener('touchend', onEnd);
+  wrap.addEventListener('mousedown', onStart);
+  wrap.addEventListener('mousemove', onMove);
+  wrap.addEventListener('mouseup', onEnd);
+  wrap.addEventListener('mouseleave', onEnd);
+})();
 
 const TIER_RANK = { n:0, r:1, sr:2, lsr:3, mgr:4 };
 const TIER_BURST_COLOR = { r:'#bfe0f2', sr:'#d9a3e8', lsr:'#ffe9a8', mgr:'#ffe9a8' };
@@ -7562,7 +7825,8 @@ function startGachaReveal(results){
     });
     const againBtn = document.getElementById('grAgain');
     if(againBtn && lastPull){
-      againBtn.textContent = (lastPull.count===1 ? 'もう一度引く' : '10連をもう一度') + `（🪙${lastPull.cost}）`;
+      const pack = PACK_TYPES[lastPull.packId] || PACK_TYPES.standard;
+      againBtn.textContent = (lastPull.numPacks===1 ? `パック1つ（${pack.cardsPerPack}枚）をもう一度` : `パック10個（${pack.cardsPerPack*10}枚）をもう一度`) + `（🪙${lastPull.cost}）`;
     }
     resultsPanel.classList.remove('hidden');
   }
@@ -7582,7 +7846,10 @@ document.getElementById('heroBanner').addEventListener('click', ()=>{
   openGachaHome();
 });
 document.getElementById('grAgain').addEventListener('click', ()=>{
-  if(lastPull) tryPullGacha(lastPull.count, lastPull.cost);
+  if(lastPull){
+    gachaSelectedPackId = lastPull.packId || 'standard';
+    tryPullGacha(lastPull.numPacks);
+  }
 });
 
 // ============================================================
