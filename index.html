@@ -763,6 +763,12 @@
   .raid-allies{ display:flex; gap:10px; }
   .raid-ally-card{ flex:1; background:rgba(0,0,0,0.35); border-radius:10px; padding:8px 10px; }
   .raid-ally-label{ font-size:11px; color:var(--gold); margin-bottom:4px; }
+  .raid-ally-head{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .raid-ally-head .raid-ally-label{ margin-bottom:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .raid-ally-avatar{
+    flex:0 0 auto; width:22px; height:22px; border-radius:6px; object-fit:cover;
+    border:1px solid rgba(230,200,120,0.5); background:rgba(0,0,0,0.3);
+  }
   .raid-log{
     text-align:center; font-size:12px; color:var(--gold-bright);
     min-height:32px; padding:4px 8px;
@@ -2653,8 +2659,12 @@
         <div class="ult-gauge-wrap"><div class="ult-gauge" id="raidMyUltGauge"></div></div>
       </div>
       <div class="raid-ally-card">
-        <div class="raid-ally-label" id="raidPartnerLabel">相棒</div>
+        <div class="raid-ally-head">
+          <img class="raid-ally-avatar" id="raidPartnerAvatar" src="" alt="" style="display:none;">
+          <div class="raid-ally-label" id="raidPartnerLabel">相棒</div>
+        </div>
         <div class="hpbar-wrap"><div class="hpbar" id="raidPartnerHpBar"></div><div class="hptext" id="raidPartnerHpText"></div></div>
+        <div class="ult-gauge-wrap"><div class="ult-gauge" id="raidPartnerUltGauge"></div></div>
       </div>
     </div>
     <div class="raid-reveal-row" id="raidRevealRow">
@@ -3884,6 +3894,13 @@ const RaidNet = (function(){
     socket.on('raid_ult_used', handlers.onUltUsed);
     socket.on('raid_room_created', handlers.onRoomCreated);
     socket.on('raid_join_error', handlers.onJoinError);
+    // 戦闘中にソケットが切れると、サーバー側では即CPU代行に切り替わって
+    // 自分は部屋の外に出てしまう。その状態で画面だけ戦闘が続いて見えると
+    // 「手を出しても何も起きない」という不可解なバグに見えるので、
+    // 切断を検知したらはっきり伝えてホームに帰す。
+    socket.on('disconnect', ()=>{
+      if(handlers.onConnectionLost) handlers.onConnectionLost();
+    });
     return {
       quickMatch(bossId, difficulty){ socket.emit('quick_match_raid', {name:playerName, bossId, difficulty}); },
       cancelQuick(){ socket.emit('cancel_quick_match_raid'); },
@@ -3916,6 +3933,7 @@ let raidDifficulty = 'easy';
 let raidSelectedBossId = null;  // 一覧でタップしたボスID(マッチング〜バトル中もこれを参照する)
 let raidPartnerName = 'あいて';
 let raidDeck = null;        // [{ id, hp, maxHp, atk, winBonus, hand }, x3]
+let raidOpponentDeck = null; // 相棒のデッキ(HPと必殺ゲージ表示用にクライアント側でも追跡)
 let raidActiveIdx = 0;
 let raidOpponentActiveIdx = 0;
 let raidTurnTimer = null;
@@ -4085,8 +4103,11 @@ const raidNetHandlers = {
     raidSelectedBossId = d.bossId || raidSelectedBossId || 'erebos';
     const boss = RAID_BOSSES[raidSelectedBossId];
     raidPaused = false;
+    raidHandLocked = false;
     raidDeck = d.yourDeck;
     raidDeck.forEach(c=>{ if(c.ultGauge==null) c.ultGauge = 0; });
+    raidOpponentDeck = d.opponentDeck;
+    raidOpponentDeck.forEach(c=>{ if(c.ultGauge==null) c.ultGauge = 0; });
     raidActiveIdx = 0;
     raidOpponentActiveIdx = 0;
     raidBossCurHp = d.boss.hp;
@@ -4096,6 +4117,7 @@ const raidNetHandlers = {
       myHp:raidDeck[0].hp, myMaxHp:raidDeck[0].maxHp,
       partnerHp:d.opponentDeck[0].hp, partnerMaxHp:d.opponentDeck[0].maxHp,
     });
+    updateRaidPartnerUI();
     document.getElementById('raidLog').textContent = boss.logAwaken(RAID_DIFF_LABEL[raidDifficulty]);
     document.getElementById('raidBossImg').src = boss.img;
     document.getElementById('raidBossImg').alt = boss.name;
@@ -4112,11 +4134,16 @@ const raidNetHandlers = {
   },
   onOpponentSwap(d){
     raidOpponentActiveIdx = d.index;
+    updateRaidPartnerUI();
   },
   onUltUsed(d){
     raidBossCurHp = d.bossHp;
     updateRaidHpBars({ bossHp:d.bossHp, bossMaxHp:d.bossMaxHp });
     const who = d.byYou ? 'あなた' : document.getElementById('raidPartnerLabel').textContent;
+    if(!d.byYou && raidOpponentDeck && raidOpponentDeck[raidOpponentActiveIdx]){
+      raidOpponentDeck[raidOpponentActiveIdx].ultGauge = 0;
+      updateRaidPartnerUI();
+    }
     document.getElementById('raidLog').textContent = `💥 ${who}の必殺技「${d.moveName}」！ ボスに${d.damage}ダメージ！`;
     playSE('rarityLSR');
     if(d.bossDefeated){
@@ -4148,16 +4175,27 @@ const raidNetHandlers = {
     if(label) label.textContent = `${d && d.name ? d.name : raidPartnerName}（CPU）`;
     toastMessage('相棒が退室したので、CPUが代わりに戦います');
   },
+  onConnectionLost(){
+    // 戦闘画面が表示されている時だけ反応(ホーム等での切断は無害)
+    const inRaidBattle = document.getElementById('raidBattle').classList.contains('active');
+    const inRaidHome = document.getElementById('raidHome').classList.contains('active');
+    if(!inRaidBattle && !inRaidHome) return;
+    clearRaidTurnTimer();
+    raidClearRevealTimer();
+    clearInterval(raidQuickTimer);
+    toastMessage('⚠️ 通信が切断されました');
+    go('home');
+  },
 };
 
-// 「相方がお互い出を決めても5秒経つまで結果を出さない」演出用カウントダウン。
-// #raidTimer を手選択タイマーと共用し、5→0でボスの手と結果を公開する。
+// 「相方がお互い出を決めても2秒経つまで結果を出さない」演出用カウントダウン。
+// #raidTimer を手選択タイマーと共用し、2→0でボスの手と結果を公開する。
 let raidRevealTimer = null;
 function raidClearRevealTimer(){ clearInterval(raidRevealTimer); raidRevealTimer=null; }
 function raidRevealCountdown(d){
   raidClearRevealTimer();
   const timerEl = document.getElementById('raidTimer');
-  let sec = 5;
+  let sec = 2;
   timerEl.textContent = sec;
   timerEl.classList.remove('urgent');
   raidRevealTimer = setInterval(()=>{
@@ -4173,6 +4211,10 @@ function raidRevealCountdown(d){
 
 function raidRevealResult(d){
   raidDeck[d.you.cardIdx].hp = d.you.hpAfter;
+  // 相棒側のカードHPも追跡(相棒HPバーとゲージ表示の元データ)
+  if(d.opponent && raidOpponentDeck && raidOpponentDeck[d.opponent.cardIdx]){
+    raidOpponentDeck[d.opponent.cardIdx].hp = d.opponent.hpAfter;
+  }
   const partnerLabel = document.getElementById('raidPartnerLabel').textContent;
 
   // ボスと自分の手を公開
@@ -4201,12 +4243,24 @@ function raidRevealResult(d){
     if(d.you.outcome==='win') activeCard.ultGauge = Math.min(100, (activeCard.ultGauge||0) + (d.you.hand===activeCard.hand ? 30 : 20));
     else if(d.you.outcome==='draw') activeCard.ultGauge = Math.min(100, (activeCard.ultGauge||0) + 15);
   }
+  // 相棒側のゲージも同じルールでクライアント側から推定して表示する
+  // (サーバーはゲージを持たない — 発動はクライアント判断でuse_raid_ultが飛んでくる設計のため)
+  if(d.opponent && raidOpponentDeck){
+    const oppCard = raidOpponentDeck[d.opponent.cardIdx];
+    if(oppCard && CARDS[oppCard.id] && canUseUltimate(CARDS[oppCard.id]) && oppCard.hp > 0){
+      if(d.opponent.outcome==='win') oppCard.ultGauge = Math.min(100, (oppCard.ultGauge||0) + (d.opponent.hand===oppCard.hand ? 30 : 20));
+      else if(d.opponent.outcome==='draw') oppCard.ultGauge = Math.min(100, (oppCard.ultGauge||0) + 15);
+    }
+  }
 
   const boss = RAID_BOSSES[raidSelectedBossId];
   const continueTurn = ()=>{
     if(d.ultimate){
       logParts.push(`💥 ${boss.name}の必殺技「${boss.ultMoveName}」！ 全員に大ダメージ`);
       if(d.ultimate.you) raidDeck[d.ultimate.you.cardIdx].hp = d.ultimate.you.hpAfter;
+      if(d.ultimate.opponent && raidOpponentDeck && raidOpponentDeck[d.ultimate.opponent.cardIdx]){
+        raidOpponentDeck[d.ultimate.opponent.cardIdx].hp = d.ultimate.opponent.hpAfter;
+      }
     }
     if(d.yourAutoSwap!=null){
       raidActiveIdx = d.yourAutoSwap;
@@ -4216,13 +4270,16 @@ function raidRevealResult(d){
 
     document.getElementById('raidLog').textContent = logParts.join(' / ');
     raidBossCurHp = d.bossHp;
+    const oppActive = raidOpponentDeck ? raidOpponentDeck[raidOpponentActiveIdx] : null;
     updateRaidHpBars({
       bossHp:d.bossHp, bossMaxHp:d.bossMaxHp,
       myHp:raidDeck[raidActiveIdx].hp, myMaxHp:raidDeck[raidActiveIdx].maxHp,
-      partnerHp: d.opponent ? d.opponent.hpAfter : null,
+      partnerHp: oppActive ? oppActive.hp : (d.opponent ? d.opponent.hpAfter : null),
+      partnerMaxHp: oppActive ? oppActive.maxHp : null,
     });
     renderRaidPartyBar();
     updateRaidUltUI();
+    updateRaidPartnerUI();
 
     const ultWarnEl = document.getElementById('raidUltWarning');
     if(d.bossDefeated || (d.playersDown && d.playersDown.length>0)){
@@ -4277,6 +4334,26 @@ function tryRaidSwitch(i){
   document.getElementById('raidLog').textContent = `${CARDS[raidDeck[i].id].name} に交代！`;
 }
 
+// 相棒の使用キャラアイコンと必殺ゲージを更新
+function updateRaidPartnerUI(){
+  const avatar = document.getElementById('raidPartnerAvatar');
+  const gauge = document.getElementById('raidPartnerUltGauge');
+  if(!raidOpponentDeck){ if(avatar) avatar.style.display='none'; return; }
+  const oppCard = raidOpponentDeck[raidOpponentActiveIdx];
+  if(!oppCard) return;
+  const c = CARDS[oppCard.id];
+  if(avatar && c){
+    avatar.src = c.pixelImg || c.img || '';
+    avatar.style.display = '';
+  }
+  if(gauge){
+    const usable = c && canUseUltimate(c) && oppCard.hp > 0;
+    const g = usable ? (oppCard.ultGauge || 0) : 0;
+    gauge.style.width = g + '%';
+    gauge.classList.toggle('ready', g >= 100);
+  }
+}
+
 function updateRaidHpBars({bossHp, bossMaxHp, myHp, myMaxHp, partnerHp, partnerMaxHp}){
   if(bossHp!=null && bossMaxHp!=null){
     const pct = Math.max(0, Math.round(bossHp/bossMaxHp*100));
@@ -4290,10 +4367,11 @@ function updateRaidHpBars({bossHp, bossMaxHp, myHp, myMaxHp, partnerHp, partnerM
     document.getElementById('raidMyHpText').textContent = `${Math.max(0,myHp)} / ${maxHp}`;
   }
   if(partnerHp!=null){
-    const maxHp = partnerMaxHp || 999; // opponent's exact maxHp for a benched card isn't tracked client-side; bar still reads correctly off raw HP
+    const oppCard = raidOpponentDeck ? raidOpponentDeck[raidOpponentActiveIdx] : null;
+    const maxHp = partnerMaxHp || (oppCard && oppCard.maxHp) || Math.max(partnerHp, 1);
     const pct = Math.max(0, Math.round(partnerHp/maxHp*100));
     document.getElementById('raidPartnerHpBar').style.width = pct+'%';
-    document.getElementById('raidPartnerHpText').textContent = `${Math.max(0,partnerHp)}`;
+    document.getElementById('raidPartnerHpText').textContent = `${Math.max(0,partnerHp)} / ${maxHp}`;
   }
 }
 
