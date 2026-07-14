@@ -1495,11 +1495,15 @@
     display:flex; align-items:center; justify-content:space-between; gap:6px;
     margin-top:6px; padding:0 1px;
   }
+  .mc-typeline-left{
+    display:flex; align-items:center; gap:5px; min-width:0; flex:1 1 auto;
+  }
   .mc-attr{
     font-size:9px;
     color:rgba(255,255,255,0.92);
     font-family:"Noto Serif JP", serif;
     overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+    min-width:0;
   }
   .mc-hand{
     flex:0 0 auto;
@@ -1543,7 +1547,7 @@
     box-shadow:0 1px 3px rgba(0,0,0,0.5);
   }
   .lsr-tag-inline{
-    margin-right:auto;
+    flex:0 0 auto;
     font-family:"Cinzel", serif; font-weight:800; font-size:7.5px; letter-spacing:.04em;
     background:linear-gradient(120deg,#ff6ea0,#ffd56a,#7af0b0,#62c9ff,#b48bff);
     color:#fff; padding:2px 6px; border-radius:5px;
@@ -1551,14 +1555,14 @@
     text-shadow:0 1px 1px rgba(0,0,0,0.4);
   }
   .r-tag-inline{
-    margin-right:auto;
+    flex:0 0 auto;
     font-family:"Cinzel", serif; font-weight:800; font-size:7.5px; letter-spacing:.04em;
     background:linear-gradient(135deg,#cfe3f0,#5b8fae);
     color:#0f2e3f; padding:2px 6px; border-radius:5px;
     border:1px solid rgba(255,255,255,0.5);
   }
   .sr-tag-inline{
-    margin-right:auto;
+    flex:0 0 auto;
     font-family:"Cinzel", serif; font-weight:800; font-size:7.5px; letter-spacing:.04em;
     background:linear-gradient(135deg,#e8c4f0,#6b1f8c);
     color:#f3e0fa; padding:2px 6px; border-radius:5px;
@@ -2253,7 +2257,7 @@
     box-shadow:0 0 0 1px rgba(248,231,176,0.5), 0 3px 8px rgba(0,0,0,0.45);
   }
   .mgr-tag-inline{
-    margin-right:auto;
+    flex:0 0 auto;
     font-family:"Cinzel", serif; font-weight:800; font-size:7.5px; letter-spacing:.04em;
     background:linear-gradient(150deg,#f8e7b0,#b8902f);
     color:#16110a; padding:2px 6px; border-radius:5px;
@@ -5544,7 +5548,6 @@ function buildDeckScreen(){
         <div class="mc-titlebar">
           <div class="mc-name">${c.name}</div>
           <div class="mc-metarow">
-            ${c.rarity==='lsr' ? '<span class="lsr-tag-inline">LSR</span>' : (c.rarity==='mgr' ? '<span class="mgr-tag-inline">MGR</span>' : (c.rarity==='sr' ? '<span class="sr-tag-inline">SR</span>' : (c.rarity==='r' ? '<span class="r-tag-inline">R</span>' : '')))}
             <span class="mc-atk">Lv${getCardLevel(id)}</span>
             <span class="mc-atk">ATK${st.atk}</span>
             <span class="mc-hp">HP${st.hp}</span>
@@ -5552,7 +5555,10 @@ function buildDeckScreen(){
         </div>
         <div class="mc-art"><img src="${c.img}" alt=""></div>
         <div class="mc-typeline">
-          <span class="mc-attr">${c.attr}属性</span>
+          <span class="mc-typeline-left">
+            ${c.rarity==='lsr' ? '<span class="lsr-tag-inline">LSR</span>' : (c.rarity==='mgr' ? '<span class="mgr-tag-inline">MGR</span>' : (c.rarity==='sr' ? '<span class="sr-tag-inline">SR</span>' : (c.rarity==='r' ? '<span class="r-tag-inline">R</span>' : '')))}
+            <span class="mc-attr">${c.attr}属性</span>
+          </span>
           <span class="mc-hand">${HAND_JP[c.hand]}</span>
         </div>
       </div>
