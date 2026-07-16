@@ -520,6 +520,11 @@
   .res-chip .ic{font-size:14px;}
   .res-chip .val{font-family:"Cinzel",serif; font-weight:800; font-size:12px; color:#fff;}
   .res-chip .sub{font-size:8px; color:var(--gold); opacity:0.7; margin-left:1px;}
+  .res-chip-col{display:flex; flex-direction:column; align-items:center; gap:2px;}
+  .stamina-timer{
+    font-size:9px; color:var(--gold); opacity:0.75; letter-spacing:.02em;
+    height:11px; line-height:11px; font-variant-numeric:tabular-nums;
+  }
   .res-chip.add{cursor:pointer;}
   .res-chip .plus{
     margin-left:3px; width:15px; height:15px; border-radius:50%;
@@ -2328,6 +2333,95 @@
     font-size:13px; cursor:pointer;
   }
 
+  /* ============ その他 (menu hub / settings / profile / news) ============ */
+  .menu-hub-list{ padding:70px 16px 20px; display:flex; flex-direction:column; gap:12px; }
+  .menu-hub-row{
+    display:flex; align-items:center; gap:14px;
+    background:rgba(0,0,0,0.35); border:1px solid rgba(230,200,120,0.25);
+    border-radius:14px; padding:16px; cursor:pointer;
+  }
+  .menu-hub-row:active{ transform:scale(0.98); }
+  .menu-hub-row .mhr-ic{ font-size:24px; flex:0 0 auto; }
+  .menu-hub-row .mhr-text{ flex:1; min-width:0; }
+  .menu-hub-row .mhr-title{ font-family:"Shippori Mincho",serif; font-weight:700; font-size:14px; color:var(--gold-bright); }
+  .menu-hub-row .mhr-sub{ font-size:10px; color:var(--gold); opacity:0.7; margin-top:2px; }
+  .menu-hub-row .mhr-arrow{ color:var(--gold); opacity:0.5; font-size:14px; }
+
+  .settings-list, .profile-scroll, .news-list{ padding:70px 16px 30px; overflow-y:auto; height:100%; }
+  .settings-section{ margin-bottom:22px; }
+  .settings-section-title{
+    font-family:"Shippori Mincho",serif; font-size:12px; color:var(--gold);
+    opacity:0.75; margin-bottom:8px; letter-spacing:.05em;
+  }
+  .settings-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:rgba(0,0,0,0.3); border:1px solid rgba(230,200,120,0.2);
+    border-radius:12px; padding:12px 14px; margin-bottom:8px;
+  }
+  .settings-row .sr-label{ font-size:13px; color:#fff; font-family:"Shippori Mincho",serif; }
+  .settings-row input[type="range"]{ width:120px; accent-color:var(--gold-bright); }
+  .mute-toggle{
+    width:44px; height:24px; border-radius:12px; background:rgba(255,255,255,0.15);
+    position:relative; cursor:pointer; border:1px solid rgba(230,200,120,0.3); flex:0 0 auto;
+  }
+  .mute-toggle .knob{
+    position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:var(--gold); transition:left .15s ease;
+  }
+  .mute-toggle.on{ background:rgba(200,120,80,0.35); }
+  .mute-toggle.on .knob{ left:22px; background:var(--gold-bright); }
+  .settings-danger-btn{
+    width:100%; margin-top:4px;
+    background:rgba(160,40,30,0.25); border:1px solid rgba(220,90,70,0.5); color:#ffb3a3;
+    border-radius:10px; padding:12px; font-family:"Shippori Mincho",serif; font-weight:700;
+    font-size:12px; cursor:pointer;
+  }
+  .settings-danger-btn.armed{ background:rgba(200,40,30,0.55); color:#fff; }
+  .settings-version{ text-align:center; font-size:10px; color:var(--gold); opacity:0.5; margin-top:20px; }
+
+  .profile-card{
+    display:flex; align-items:center; gap:12px;
+    background:linear-gradient(150deg, rgba(90,60,20,0.5), rgba(30,20,10,0.5));
+    border:1px solid rgba(230,200,120,0.3); border-radius:16px; padding:16px; margin-bottom:16px;
+  }
+  .profile-avatar{
+    width:52px; height:52px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--bronze) 70%, var(--bronze-deep));
+    display:flex; align-items:center; justify-content:center; font-size:26px; flex:0 0 auto;
+  }
+  .profile-name{ font-family:"Shippori Mincho",serif; font-weight:800; font-size:15px; color:var(--gold-bright); }
+  .profile-rank{ font-size:11px; color:var(--gold); opacity:0.8; margin-top:3px; }
+  .profile-exp-bar{ height:6px; border-radius:3px; background:rgba(255,255,255,0.15); margin-top:8px; overflow:hidden; }
+  .profile-exp-fill{ height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-bright)); }
+
+  .profile-stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
+  .profile-stat{
+    background:rgba(0,0,0,0.3); border:1px solid rgba(230,200,120,0.2); border-radius:12px;
+    padding:12px; text-align:center;
+  }
+  .profile-stat .ps-val{ font-family:"Cinzel",serif; font-weight:800; font-size:18px; color:#fff; }
+  .profile-stat .ps-label{ font-size:10px; color:var(--gold); opacity:0.75; margin-top:4px; }
+
+  .ach-row{
+    display:flex; align-items:center; gap:10px;
+    background:rgba(0,0,0,0.3); border:1px solid rgba(230,200,120,0.2);
+    border-radius:12px; padding:11px 14px; margin-bottom:8px; opacity:0.45;
+  }
+  .ach-row.unlocked{ opacity:1; border-color:rgba(230,200,120,0.5); }
+  .ach-row .ach-ic{ font-size:18px; }
+  .ach-row .ach-text{ flex:1; font-size:12px; font-family:"Shippori Mincho",serif; color:#fff; }
+  .ach-row .ach-check{ font-size:13px; color:var(--gold-bright); }
+
+  .news-item{
+    background:rgba(0,0,0,0.3); border:1px solid rgba(230,200,120,0.2);
+    border-radius:12px; padding:14px; margin-bottom:10px;
+  }
+  .news-item .news-date{ font-size:10px; color:var(--gold); opacity:0.7; }
+  .news-item .news-title{ font-family:"Shippori Mincho",serif; font-weight:700; font-size:13px; color:var(--gold-bright); margin-top:3px; }
+  .news-item .news-body{ font-size:11.5px; color:rgba(255,255,255,0.85); margin-top:6px; line-height:1.6; }
+  .news-item.news-tag-update .news-date::before{ content:'🆕 '; }
+  .news-item.news-tag-event .news-date::before{ content:'🎉 '; }
+
 </style>
 </head>
 <body>
@@ -2384,8 +2478,11 @@
         <div class="player-rank" id="playerRankLabel">RANK 1 ・ ルーキー</div>
       </div>
       <div class="resources">
-        <div class="res-chip">
-          <span class="ic">⚡</span><span class="val" id="staminaVal">5</span><span class="sub" id="staminaMaxSub">/5</span>
+        <div class="res-chip-col">
+          <div class="res-chip">
+            <span class="ic">⚡</span><span class="val" id="staminaVal">5</span><span class="sub" id="staminaMaxSub">/5</span>
+          </div>
+          <div class="stamina-timer" id="staminaTimer"></div>
         </div>
         <div class="res-chip add" id="coinChip">
           <span class="ic">🪙</span><span class="val" id="coinVal">1200</span>
@@ -2954,6 +3051,100 @@
     <div class="collection-grid" id="collectionGrid"></div>
   </section>
 
+  <!-- ============ [その他] MENU HUB ============ -->
+  <section class="screen" id="menuHub">
+    <button class="arcade-back" id="menuHubBack">‹ ホームへ</button>
+    <div class="screen-head" style="margin-top:26px;">
+      <h2>その他</h2>
+    </div>
+    <div class="menu-hub-list">
+      <div class="menu-hub-row" id="menuGoSettings">
+        <div class="mhr-ic">⚙️</div>
+        <div class="mhr-text">
+          <div class="mhr-title">設定</div>
+          <div class="mhr-sub">音量・データ管理</div>
+        </div>
+        <div class="mhr-arrow">›</div>
+      </div>
+      <div class="menu-hub-row" id="menuGoProfile">
+        <div class="mhr-ic">👤</div>
+        <div class="mhr-text">
+          <div class="mhr-title">プロフィール・実績</div>
+          <div class="mhr-sub">ランク・記録・達成状況</div>
+        </div>
+        <div class="mhr-arrow">›</div>
+      </div>
+      <div class="menu-hub-row" id="menuGoNews">
+        <div class="mhr-ic">📢</div>
+        <div class="mhr-text">
+          <div class="mhr-title">お知らせ</div>
+          <div class="mhr-sub">最新情報・イベント</div>
+        </div>
+        <div class="mhr-arrow">›</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ [その他] 設定 ============ -->
+  <section class="screen" id="settingsScreen">
+    <button class="arcade-back" id="settingsBack">‹ その他へ</button>
+    <div class="screen-head" style="margin-top:26px;">
+      <h2>設定</h2>
+    </div>
+    <div class="settings-list">
+      <div class="settings-section">
+        <div class="settings-section-title">サウンド</div>
+        <div class="settings-row">
+          <span class="sr-label">BGM音量</span>
+          <input type="range" id="bgmVolumeSlider" min="0" max="100" value="55">
+        </div>
+        <div class="settings-row">
+          <span class="sr-label">SE音量</span>
+          <input type="range" id="sfxVolumeSlider" min="0" max="100" value="85">
+        </div>
+        <div class="settings-row">
+          <span class="sr-label">ミュート</span>
+          <div class="mute-toggle" id="muteToggle"><div class="knob"></div></div>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">データ</div>
+        <button class="settings-danger-btn" id="debugResetBtn">🗑 セーブデータをリセット（テスト用）</button>
+      </div>
+      <div class="settings-version">ジャンケンバトラーズ ・ DEMO BUILD</div>
+    </div>
+  </section>
+
+  <!-- ============ [その他] プロフィール・実績 ============ -->
+  <section class="screen" id="profileScreen">
+    <button class="arcade-back" id="profileBack">‹ その他へ</button>
+    <div class="screen-head" style="margin-top:26px;">
+      <h2>プロフィール・実績</h2>
+    </div>
+    <div class="profile-scroll">
+      <div class="profile-card">
+        <div class="profile-avatar">🧙</div>
+        <div style="flex:1; min-width:0;">
+          <div class="profile-name" id="profileNameLabel">プレイヤー</div>
+          <div class="profile-rank" id="profileRankLabel">RANK 1 ・ ルーキー</div>
+          <div class="profile-exp-bar"><div class="profile-exp-fill" id="profileExpFill" style="width:0%;"></div></div>
+        </div>
+      </div>
+      <div class="profile-stat-grid" id="profileStatGrid"></div>
+      <div class="settings-section-title">実績</div>
+      <div id="achievementList"></div>
+    </div>
+  </section>
+
+  <!-- ============ [その他] お知らせ ============ -->
+  <section class="screen" id="newsScreen">
+    <button class="arcade-back" id="newsBack">‹ その他へ</button>
+    <div class="screen-head" style="margin-top:26px;">
+      <h2>お知らせ</h2>
+    </div>
+    <div class="news-list" id="newsList"></div>
+  </section>
+
   <!-- EFFECT DETAIL MODAL -->
   <div class="modal-overlay" id="effectModal">
     <div class="modal-card" id="modalCard">
@@ -3100,6 +3291,10 @@ const S = {
   raidHome: document.getElementById('raidHome'),
   raidBattle: document.getElementById('raidBattle'),
   raidResult: document.getElementById('raidResult'),
+  menuHub: document.getElementById('menuHub'),
+  settingsScreen: document.getElementById('settingsScreen'),
+  profileScreen: document.getElementById('profileScreen'),
+  newsScreen: document.getElementById('newsScreen'),
 };
 function go(name){
   Object.values(S).forEach(s=>s.classList.remove('active'));
@@ -3428,12 +3623,29 @@ function minutesUntilNextStamina(){
   const msLeft = STAMINA_REGEN_MS - (Date.now() - lastStaminaTime);
   return Math.max(1, Math.ceil(msLeft / 60000));
 }
+// ms remaining until the next single stamina point recovers (0 if already full)
+function msUntilNextStamina(){
+  if(stamina >= STAMINA_MAX) return 0;
+  return Math.max(0, STAMINA_REGEN_MS - (Date.now() - lastStaminaTime));
+}
 function updateStaminaDisplay(){
   regenStamina();
   const el = document.getElementById('staminaVal');
   if(el) el.textContent = stamina;
   const sub = document.getElementById('staminaMaxSub');
   if(sub) sub.textContent = `/${STAMINA_MAX}`;
+  const timerEl = document.getElementById('staminaTimer');
+  if(timerEl){
+    if(stamina >= STAMINA_MAX){
+      timerEl.textContent = '';
+    } else {
+      const msLeft = msUntilNextStamina();
+      const totalSec = Math.max(0, Math.ceil(msLeft / 1000));
+      const mm = Math.floor(totalSec / 60);
+      const ss = totalSec % 60;
+      timerEl.textContent = `次まで${mm}:${String(ss).padStart(2,'0')}`;
+    }
+  }
 }
 
 function getCardLevel(id){ return cardLevels[id] || 1; }
@@ -3488,7 +3700,7 @@ let skipAutoSave = false; // set true right before a reset-and-reload so the bef
 function saveState(){
   if(skipAutoSave) return;
   try{
-    const payload = { playerCoins, coinBalanceCorrectedV1, devCoinsGranted, coinRevertV2Applied, ownedCards, selectedDeck, cardLevels, cardLB, playerRank, playerExp, endlessBest, storyMaxCleared, tutorialDone, seasonPrologueSeen, lastLoginDate, loginStreak, playerName, stamina, lastStaminaTime, favoriteCards };
+    const payload = { playerCoins, coinBalanceCorrectedV1, devCoinsGranted, coinRevertV2Applied, ownedCards, selectedDeck, cardLevels, cardLB, playerRank, playerExp, endlessBest, storyMaxCleared, tutorialDone, seasonPrologueSeen, lastLoginDate, loginStreak, playerName, stamina, lastStaminaTime, favoriteCards, bgmVolume, sfxVolume, audioMuted };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   }catch(err){
     // localStorage can throw in rare cases (private browsing quota, etc).
@@ -3612,6 +3824,9 @@ function loadState(){
   seasonPrologueSeen = (typeof saved.seasonPrologueSeen === 'boolean') ? saved.seasonPrologueSeen : true;
   if(typeof saved.lastLoginDate === 'string') lastLoginDate = saved.lastLoginDate;
   if(typeof saved.loginStreak === 'number' && isFinite(saved.loginStreak) && saved.loginStreak>=0) loginStreak = Math.floor(saved.loginStreak);
+  if(typeof saved.bgmVolume === 'number' && isFinite(saved.bgmVolume)) bgmVolume = Math.min(1, Math.max(0, saved.bgmVolume));
+  if(typeof saved.sfxVolume === 'number' && isFinite(saved.sfxVolume)) sfxVolume = Math.min(1, Math.max(0, saved.sfxVolume));
+  if(typeof saved.audioMuted === 'boolean') audioMuted = saved.audioMuted;
   if(typeof saved.playerName === 'string'){
     const trimmed = saved.playerName.trim().slice(0, 12);
     if(trimmed) playerName = trimmed;
@@ -3700,6 +3915,12 @@ document.querySelectorAll('.nav-item').forEach(item=>{
       openCollection();
       return;
     }
+    if(feat==='メニュー'){
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
+      openMenuHub();
+      return;
+    }
     // flash active briefly, show toast, then revert to home tab
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
     item.classList.add('active');
@@ -3711,6 +3932,120 @@ document.querySelectorAll('.nav-item').forEach(item=>{
   });
 });
 
+
+/* ============================================================
+   その他メニュー: 設定 / プロフィール・実績 / お知らせ
+   ============================================================ */
+function openMenuHub(){ go('menuHub'); }
+function openSettings(){ updateSettingsDisplay(); go('settingsScreen'); }
+function openProfile(){ renderProfileScreen(); go('profileScreen'); }
+function openNews(){ renderNewsScreen(); go('newsScreen'); }
+
+document.getElementById('menuHubBack').addEventListener('click', goHomeReset);
+document.getElementById('settingsBack').addEventListener('click', ()=> go('menuHub'));
+document.getElementById('profileBack').addEventListener('click', ()=> go('menuHub'));
+document.getElementById('newsBack').addEventListener('click', ()=> go('menuHub'));
+document.getElementById('menuGoSettings').addEventListener('click', openSettings);
+document.getElementById('menuGoProfile').addEventListener('click', openProfile);
+document.getElementById('menuGoNews').addEventListener('click', openNews);
+
+/* ---- 設定: 音量・ミュート・データリセット ---- */
+function updateSettingsDisplay(){
+  const bgmSlider = document.getElementById('bgmVolumeSlider');
+  const sfxSlider = document.getElementById('sfxVolumeSlider');
+  if(bgmSlider) bgmSlider.value = Math.round(bgmVolume * 100);
+  if(sfxSlider) sfxSlider.value = Math.round(sfxVolume * 100);
+  const mute = document.getElementById('muteToggle');
+  if(mute) mute.classList.toggle('on', audioMuted);
+}
+document.getElementById('bgmVolumeSlider').addEventListener('input', (e)=>{
+  bgmVolume = Number(e.target.value) / 100;
+  if(currentBgmKey && BGM[currentBgmKey] && !audioMuted) BGM[currentBgmKey].volume = bgmVolume;
+  saveState();
+});
+document.getElementById('sfxVolumeSlider').addEventListener('input', (e)=>{
+  sfxVolume = Number(e.target.value) / 100;
+  saveState();
+});
+document.getElementById('muteToggle').addEventListener('click', ()=>{
+  audioMuted = !audioMuted;
+  if(audioMuted){
+    if(currentBgmKey && BGM[currentBgmKey]) BGM[currentBgmKey].pause();
+  } else if(currentBgmKey && BGM[currentBgmKey]){
+    BGM[currentBgmKey].volume = bgmVolume;
+    BGM[currentBgmKey].play().catch(()=>{ bgmPendingRetry = true; });
+  }
+  updateSettingsDisplay();
+  saveState();
+});
+document.getElementById('debugResetBtn').addEventListener('click', resetSaveData);
+
+/* ---- プロフィール・実績 ---- */
+function renderProfileScreen(){
+  const nameEl = document.getElementById('profileNameLabel');
+  if(nameEl) nameEl.textContent = playerName;
+  const rankEl = document.getElementById('profileRankLabel');
+  if(rankEl) rankEl.textContent = `RANK ${playerRank} ・ ${rankTitle(playerRank)}`;
+  const fillEl = document.getElementById('profileExpFill');
+  if(fillEl){
+    const need = expNeeded(playerRank);
+    const pct = need > 0 ? Math.min(100, Math.round(playerExp / need * 100)) : 100;
+    fillEl.style.width = pct + '%';
+  }
+  const totalChapters = currentSeasonChapters().length;
+  const stats = [
+    { val:`${ownedCards.length}/${CARD_POOL.length}`, label:'図鑑コンプリート' },
+    { val:`${storyMaxCleared}/${totalChapters}章`, label:'ストーリー最高クリア' },
+    { val:`${endlessBest}階`, label:'エンドレス最高記録' },
+    { val:`${loginStreak}日`, label:'連続ログイン' },
+  ];
+  const grid = document.getElementById('profileStatGrid');
+  if(grid){
+    grid.innerHTML = stats.map(s=>
+      `<div class="profile-stat"><div class="ps-val">${s.val}</div><div class="ps-label">${s.label}</div></div>`
+    ).join('');
+  }
+  const achievements = [
+    { done: ownedCards.length >= CARD_POOL.length, text:'図鑑コンプリート（全カード所持）', ic:'📚' },
+    { done: storyMaxCleared >= totalChapters, text:'ストーリー全章クリア', ic:'📖' },
+    { done: loginStreak >= 7, text:'7日連続ログイン', ic:'🔥' },
+    { done: playerRank >= 10, text:'ランク10到達', ic:'⭐' },
+    { done: endlessBest >= 10, text:'エンドレスタワー10階到達', ic:'🗼' },
+  ];
+  const list = document.getElementById('achievementList');
+  if(list){
+    list.innerHTML = achievements.map(a=>
+      `<div class="ach-row ${a.done ? 'unlocked' : ''}">
+         <div class="ach-ic">${a.ic}</div>
+         <div class="ach-text">${a.text}</div>
+         <div class="ach-check">${a.done ? '✓' : '🔒'}</div>
+       </div>`
+    ).join('');
+  }
+}
+
+/* ---- お知らせ ----
+   静的な配列。新しいお知らせを足す時は先頭に1件追加するだけでOK。 */
+const NEWS_ITEMS = [
+  { date:'2026-07-17', tag:'update', title:'「常闇の侵蝕」パック実装！', body:'新パック「常闇の侵蝕」が登場。常闇神ニュクスをはじめ、侵食・デバフ効果を持つ新カード全30種が追加されました。' },
+  { date:'2026-07-17', tag:'update', title:'新レイドボス「龍王-アストラガル」参戦', body:'常設レイドボスとして龍王-アストラガルが登場。必殺技「龍の息吹」に要注意。2人協力で挑もう。' },
+  { date:'2026-07-01', tag:'event', title:'サービス開始', body:'ジャンケンバトラーズへようこそ！じゃんけんで駆け引きするカードバトルゲームです。' },
+];
+function renderNewsScreen(){
+  const list = document.getElementById('newsList');
+  if(!list) return;
+  if(NEWS_ITEMS.length === 0){
+    list.innerHTML = '<div class="news-item">現在お知らせはありません。</div>';
+    return;
+  }
+  list.innerHTML = NEWS_ITEMS.map(n=>
+    `<div class="news-item news-tag-${n.tag}">
+       <div class="news-date">${n.date}</div>
+       <div class="news-title">${n.title}</div>
+       <div class="news-body">${n.body}</div>
+     </div>`
+  ).join('');
+}
 
 /* ============================================================
    ONLINE 2-PLAYER MODULE
@@ -8607,7 +8942,7 @@ updateCoinDisplay();
 updateRankDisplay();
 updatePlayerNameDisplay();
 updateStaminaDisplay();
-setInterval(updateStaminaDisplay, 30000); // keep the home screen number honest while the app is open
+setInterval(updateStaminaDisplay, 1000); // 1s tick keeps the "次まで mm:ss" countdown live while the app is open
 updateEndlessLabel();
 updateStoryProgressLabel();
 checkDailyLogin();
