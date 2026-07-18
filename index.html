@@ -389,6 +389,7 @@
     font-family:"Shippori Mincho",serif; font-weight:700; font-size:11px;
   }
   .season-utility-btn:active{ transform:scale(0.97); }
+  .season-utility-btn.locked{ opacity:0.4; }
 
   /* ===== story intro modal ===== */
   .story-intro-card{ text-align:center; padding:16px 14px; }
@@ -2226,6 +2227,7 @@
     transition:opacity .22s ease;
   }
   .modal-overlay.open{opacity:1; pointer-events:auto;}
+
   .modal-card{
     width:100%; max-width:300px;
     border-radius:16px;
@@ -3690,6 +3692,15 @@ let seasonPrologueSeenBySeason = {}; // { seasonId: true } — each season's ope
 let lastLoginDate = null;       // YYYY-MM-DD of the last day a login bonus was claimed
 let loginStreak = 0;            // consecutive-day counter for escalating login rewards
 let playerName = 'プレイヤー';  // shown on the home screen and sent to the online relay server
+// 端末ごとの永続プレイヤーID。ランクマ/フレンド機能など「同じ人だと
+// サーバーが継続して認識する」必要がある機能の土台。ログイン不要で、
+// 初回起動時に自動発行してセーブデータに乗せるだけ(以後は不変)。
+function generatePlayerId(){
+  if(typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  // crypto.randomUUID非対応の古いWebView向けフォールバック
+  return 'pid-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+let playerId = generatePlayerId(); // loadState()が既存セーブを見つければ上書きされる
 
 // ============================================================
 //  STAMINA (consumed by endless runs and story chapters; arcade/online are free)
@@ -3798,7 +3809,7 @@ let skipAutoSave = false; // set true right before a reset-and-reload so the bef
 function saveState(){
   if(skipAutoSave) return;
   try{
-    const payload = { playerCoins, coinBalanceCorrectedV1, devCoinsGranted, coinRevertV2Applied, ownedCards, selectedDeck, cardLevels, cardLB, playerRank, playerExp, endlessBest, storyMaxClearedBySeason, tutorialDone, seasonPrologueSeenBySeason, lastLoginDate, loginStreak, playerName, stamina, lastStaminaTime, favoriteCards, bgmVolume, sfxVolume, audioMuted };
+    const payload = { playerCoins, coinBalanceCorrectedV1, devCoinsGranted, coinRevertV2Applied, ownedCards, selectedDeck, cardLevels, cardLB, playerRank, playerExp, endlessBest, storyMaxClearedBySeason, tutorialDone, seasonPrologueSeenBySeason, lastLoginDate, loginStreak, playerName, playerId, stamina, lastStaminaTime, favoriteCards, bgmVolume, sfxVolume, audioMuted };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
   }catch(err){
     // localStorage can throw in rare cases (private browsing quota, etc).
@@ -3951,6 +3962,7 @@ function loadState(){
     const trimmed = saved.playerName.trim().slice(0, 12);
     if(trimmed) playerName = trimmed;
   }
+  if(typeof saved.playerId === 'string' && saved.playerId) playerId = saved.playerId; // otherwise keep the freshly-generated one from declaration time
   if(typeof saved.stamina === 'number' && isFinite(saved.stamina) && saved.stamina>=0){
     stamina = Math.min(STAMINA_MAX, Math.floor(saved.stamina));
   }
@@ -4195,6 +4207,17 @@ function renderNewsScreen(){
 const NET_MODE = 'real';                 // 'mock' | 'real'
 const SERVER_URL = 'https://janken-battlers-server.onrender.com'; // used only when NET_MODE==='real'
 
+// 接続したソケットにプレイヤーIDを登録する。ランクマ/フレンドなど
+// 「同じ人だとサーバーが継続して認識する」機能の土台。対戦の勝敗判定
+// には一切関与しない(現状はサーバー側にid/nameを覚えさせるだけ)。
+function registerPlayerOnSocket(socket){
+  const doRegister = ()=>{
+    try{ socket.emit('register_player', { id: playerId, name: playerName }); }catch(e){}
+  };
+  if(socket.connected) doRegister();
+  socket.on('connect', doRegister);
+}
+
 /* ---- view switching within #online ---- */
 function olShowView(name){
   document.querySelectorAll('#online .ol-view').forEach(v=>{
@@ -4258,6 +4281,7 @@ const Net = (function(){
       return makeMock(handlers);
     }
     const socket = io(SERVER_URL);
+    registerPlayerOnSocket(socket);
     socket.on('connect', ()=> console.log('[Net] connected', socket.id));
     socket.on('room_created', handlers.onRoomCreated);
     socket.on('join_error', handlers.onJoinError);
@@ -4359,6 +4383,7 @@ const RaidNet = (function(){
       return makeMock(handlers);
     }
     const socket = io(SERVER_URL);
+    registerPlayerOnSocket(socket);
     socket.on('raid_quick_match_waiting', handlers.onQuickWaiting);
     socket.on('raid_deck_select_start', handlers.onDeckSelectStart);
     socket.on('raid_battle_start', handlers.onBattleStart);
@@ -7990,6 +8015,7 @@ const SEASON_STORIES = {
 };
 
 let activeStorySeason = CURRENT_SEASON; // which season's tab is currently showing in the Story screen (switchable — both seasons are always playable)
+
 function currentSeasonChapters(){ return SEASON_STORIES[activeStorySeason] || SEASON_STORIES.godschallenge; }
 function currentSeasonStoryName(){ const s = activeStorySeason ? SEASONS[activeStorySeason] : null; return s ? s.name : ''; }
 function curStoryMaxCleared(){ return storyMaxClearedBySeason[activeStorySeason] || 0; }
@@ -8116,6 +8142,7 @@ function openStoryMode(){
   renderSeasonTabs();
   refreshStoryScreenForActiveSeason();
   go('storyChapters');
+  if(!seasonPrologueSeenBySeason[activeStorySeason]) openSeasonPrologue();
 }
 
 // tabs let the player freely switch between every season's story — both are
@@ -8141,6 +8168,7 @@ function switchStorySeason(sid){
   playSE('uiTap');
   renderSeasonTabs();
   refreshStoryScreenForActiveSeason();
+  if(!seasonPrologueSeenBySeason[activeStorySeason]) openSeasonPrologue();
 }
 
 function refreshStoryScreenForActiveSeason(){
@@ -8148,7 +8176,13 @@ function refreshStoryScreenForActiveSeason(){
   const seasonName = currentSeasonStoryName();
   if(sub) sub.textContent = seasonName ? `シーズン「${seasonName}」の物語` : '強敵たちを倒して物語を進めよう';
   buildStoryChapterList();
-  if(!seasonPrologueSeenBySeason[activeStorySeason]) openSeasonPrologue();
+  const endingBtn = document.getElementById('replayEndingBtn');
+  if(endingBtn){
+    const chapters = currentSeasonChapters();
+    const finale = chapters[chapters.length - 1];
+    const cleared = !!finale && curStoryMaxCleared() >= finale.num;
+    endingBtn.classList.toggle('locked', !cleared);
+  }
 }
 
 function buildStoryChapterList(){
@@ -8181,7 +8215,14 @@ function buildStoryChapterList(){
 }
 
 document.getElementById('replayPrologueBtn').addEventListener('click', ()=> openSeasonPrologue());
-document.getElementById('replayEndingBtn').addEventListener('click', ()=> openSeasonEnding(true));
+document.getElementById('replayEndingBtn').addEventListener('click', ()=>{
+  const finale = currentSeasonChapters()[currentSeasonChapters().length - 1];
+  if(!finale || curStoryMaxCleared() < finale.num){
+    toastMessage('最終章をクリアすると見られるようになります');
+    return;
+  }
+  openSeasonEnding(true);
+});
 
 let siDialogueLines = [];
 let siDialogueIndex = 0;
@@ -8210,6 +8251,8 @@ function openChapterIntro(num){
 
 // prologue: auto-plays once per season (must be read through the first time);
 // the "📜 プロローグ" button can also replay it anytime after that (freely closable then).
+// prologue: auto-plays once per season (must be read through the first time);
+// the "📜 プロローグ" button can also replay it anytime after that (freely closable then).
 function openSeasonPrologue(){
   const p = SEASON_PROLOGUE[activeStorySeason];
   if(!p){ seasonPrologueSeenBySeason[activeStorySeason] = true; saveState(); return; }
@@ -8233,8 +8276,8 @@ function openSeasonPrologue(){
 
 // ending: auto-plays once, right after the season's final chapter is first cleared
 // (and then returns home, since that's part of the clear-reward flow); the
-// "🏁 エピローグ" button can also replay it anytime — including before the season
-// is cleared — and just closes the modal instead of forcing a trip home.
+// "🏁 エピローグ" button can also replay it anytime after the season is cleared —
+// and just closes instead of forcing a trip home.
 function openSeasonEnding(isReplay){
   const e = SEASON_ENDING[activeStorySeason];
   if(!e){ if(isReplay) toastMessage('このシーズンのエピローグはまだありません'); return; }
@@ -8291,6 +8334,12 @@ document.getElementById('siStartBtn').addEventListener('click', ()=>{
   }
   const num = Number(btn.dataset.chapter);
   document.getElementById('storyIntroModal').classList.remove('open');
+  proceedToChapterDeckSelect(num);
+});
+
+// shared by both the text-dialogue "たたかう" button and the video-intro skip/end —
+// takes the player from "chapter confirmed" to the deck-select screen.
+function proceedToChapterDeckSelect(num){
   currentStoryChapter = num;
   battleMode = 'story';
   deckTarget = 'arcade';
@@ -8298,7 +8347,7 @@ document.getElementById('siStartBtn').addEventListener('click', ()=>{
   document.getElementById('arcadeDeckSub').textContent = 'バトルに持ち込む3枚を選ぼう（タップ順＝出撃順）';
   buildDeckScreen();
   go('arcadeDeck');
-});
+}
 
 function beginStoryChapter(){
   const ch = currentSeasonChapters().find(c=> c.num===currentStoryChapter);
