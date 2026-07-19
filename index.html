@@ -9316,13 +9316,15 @@ window.addEventListener('keydown', e=>{
 // ============================================================
 loadState();
 
-// Developer-only coin grant: only fires when YOU visit with ?devcoins=1 in the
+// Developer-only coin cheat: only fires when YOU visit with ?devcoins=1 in the
 // URL (e.g. bookmark index.html?devcoins=1 on your own device). Regular players
 // who just open the normal link never see this — their save never gets this
-// query param, so they keep the standard starting balance. Runs once per save
-// (guarded by devCoinsGranted, persisted below) so it won't re-grant every load.
-if(new URLSearchParams(location.search).get('devcoins') === '1' && !devCoinsGranted){
-  playerCoins = 99999;
+// query param, so they keep the standard starting balance.
+// This is a "set" (not a one-time grant): every visit with the param pins the
+// balance to 999999, so it also works as a top-up if you've spent coins down
+// during testing and want to refill.
+if(new URLSearchParams(location.search).get('devcoins') === '1'){
+  playerCoins = 999999;
   devCoinsGranted = true;
   updateCoinDisplay();
   saveState();
