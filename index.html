@@ -9324,7 +9324,7 @@ loadState();
 // balance to 999999, so it also works as a top-up if you've spent coins down
 // during testing and want to refill.
 if(new URLSearchParams(location.search).get('devcoins') === '1'){
-  playerCoins = 999999;
+  playerCoins = 9999999;
   devCoinsGranted = true;
   updateCoinDisplay();
   saveState();
